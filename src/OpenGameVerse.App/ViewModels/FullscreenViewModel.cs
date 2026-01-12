@@ -114,6 +114,25 @@ public partial class FullscreenViewModel : ViewModelBase
 
                     if (existingResult.IsSuccess && existingResult.Value != null)
                     {
+                        var existingGame = existingResult.Value;
+                        if (!string.IsNullOrWhiteSpace(gameInstallation.CoverImagePath))
+                        {
+                            var needsCover = string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
+                                || !File.Exists(existingGame.CoverImagePath);
+                            if (needsCover)
+                            {
+                                existingGame.CoverImagePath = gameInstallation.CoverImagePath;
+                                await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+
+                                var existingVm = Games.FirstOrDefault(vm =>
+                                    string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                                if (existingVm != null)
+                                {
+                                    existingVm.CoverImagePath = gameInstallation.CoverImagePath;
+                                }
+                            }
+                        }
+
                         continue; // Already in library
                     }
 

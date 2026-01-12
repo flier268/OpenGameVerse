@@ -130,7 +130,7 @@ public sealed class SteamScanner : IGameScanner
             }
 
             var coverImagePath = !string.IsNullOrWhiteSpace(appId)
-                ? GetSteamCoverPath(steamPath, appId)
+                ? GetSteamCoverPath(steamPath, libraryPath, appId)
                 : null;
             var executablePath = !string.IsNullOrWhiteSpace(appId)
                 ? $"steam://run/{appId}"
@@ -153,17 +153,99 @@ public sealed class SteamScanner : IGameScanner
         }
     }
 
-    private static string? GetSteamCoverPath(string steamPath, string appId)
+    private static string? GetSteamCoverPath(string steamPath, string libraryPath, string appId)
     {
-        var cacheDir = Path.Combine(steamPath, "appcache", "librarycache");
-        var candidates = new[]
+        string[] cacheDirs =
         {
-            Path.Combine(cacheDir, $"{appId}_library_600x900.jpg"),
-            Path.Combine(cacheDir, $"{appId}_library_600x900.png"),
-            Path.Combine(cacheDir, $"{appId}_library_capsule.jpg"),
-            Path.Combine(cacheDir, $"{appId}_library_capsule.png")
+            Path.Combine(steamPath, "appcache", "librarycache"),
+            Path.Combine(steamPath, "steamapps", "librarycache"),
+            Path.Combine(libraryPath, "steamapps", "librarycache")
         };
 
-        return candidates.FirstOrDefault(File.Exists);
+        string[] candidates =
+        {
+            $"{appId}_library_600x900.jpg",
+            $"{appId}_library_600x900.png",
+            $"{appId}_library_600x900.webp",
+            $"{appId}_library_capsule.jpg",
+            $"{appId}_library_capsule.png",
+            $"{appId}_library_capsule.webp"
+        };
+
+        foreach (var cacheDir in cacheDirs)
+        {
+            if (!Directory.Exists(cacheDir))
+            {
+                continue;
+            }
+
+            foreach (var candidate in candidates)
+            {
+                var path = Path.Combine(cacheDir, candidate);
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+            }
+
+            var appDirPath = Path.Combine(cacheDir, appId);
+            var nestedMatch = FindBestCoverInDir(appDirPath);
+            if (!string.IsNullOrEmpty(nestedMatch))
+            {
+                return nestedMatch;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? FindBestCoverInDir(string directory)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return null;
+        }
+
+        string[] preferredTokens =
+        {
+            "library_600x900",
+            "library_capsule",
+            "capsule",
+            "library"
+        };
+
+        try
+        {
+            var imageFiles = Directory.EnumerateFiles(directory)
+                .Where(IsImageFile)
+                .ToList();
+
+            foreach (var token in preferredTokens)
+            {
+                var match = imageFiles.FirstOrDefault(file =>
+                    Path.GetFileName(file).Contains(token, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(match))
+                {
+                    return match;
+                }
+            }
+
+            return imageFiles
+                .OrderByDescending(file => new FileInfo(file).Length)
+                .FirstOrDefault();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool IsImageFile(string path)
+    {
+        var extension = Path.GetExtension(path);
+        return extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".webp", StringComparison.OrdinalIgnoreCase);
     }
 }
