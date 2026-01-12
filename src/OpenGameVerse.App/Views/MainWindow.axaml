@@ -81,7 +81,9 @@
                                 Margin="5"
                                 Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
                                 CornerRadius="8"
-                                Padding="10">
+                                Padding="10"
+                                DoubleTapped="OnGameDoubleTapped"
+                                Cursor="Hand">
                             <StackPanel Spacing="8">
                                 <!-- Cover image -->
                                 <Border Width="180"

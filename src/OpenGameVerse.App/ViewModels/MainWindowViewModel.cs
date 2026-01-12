@@ -246,4 +246,54 @@ public partial class MainWindowViewModel : ViewModelBase
             // Silently fail for metadata enrichment
         }
     }
+
+    public async Task LaunchGameAsync(GameViewModel gameViewModel)
+    {
+        try
+        {
+            StatusMessage = $"Launching {gameViewModel.Title}...";
+
+            // Get full game data from repository
+            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+
+            if (!gameResult.IsSuccess || gameResult.Value == null)
+            {
+                StatusMessage = $"Error: Could not find game data for {gameViewModel.Title}";
+                return;
+            }
+
+            var game = gameResult.Value;
+
+            // Create GameInstallation for launching
+            var installation = new GameInstallation
+            {
+                Title = game.Title,
+                InstallPath = game.InstallPath,
+                Platform = game.Platform,
+                ExecutablePath = game.ExecutablePath,
+                IconPath = game.IconPath,
+                SizeBytes = game.SizeBytes
+            };
+
+            // Launch through platform host
+            var launchResult = await _platformHost.LaunchGameAsync(installation, CancellationToken.None);
+
+            if (launchResult.IsSuccess)
+            {
+                // Update last played
+                game.LastPlayed = DateTime.UtcNow;
+                await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
+
+                StatusMessage = $"Launched {game.Title}";
+            }
+            else
+            {
+                StatusMessage = $"Failed to launch {game.Title}: {launchResult.Error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Launch error: {ex.Message}";
+        }
+    }
 }
