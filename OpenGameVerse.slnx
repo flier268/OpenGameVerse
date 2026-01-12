@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OpenGameVerse.App/OpenGameVerse.App.csproj" />
+    <Project Path="src/OpenGameVerse.Console/OpenGameVerse.Console.csproj" />
+    <Project Path="src/OpenGameVerse.Core/OpenGameVerse.Core.csproj" />
+    <Project Path="src/OpenGameVerse.Data/OpenGameVerse.Data.csproj" />
+    <Project Path="src/OpenGameVerse.Metadata/OpenGameVerse.Metadata.csproj" />
+    <Project Path="src/OpenGameVerse.Platform.Linux/OpenGameVerse.Platform.Linux.csproj" />
+    <Project Path="src/OpenGameVerse.Platform.Windows/OpenGameVerse.Platform.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OpenGameVerse.Core.Tests/OpenGameVerse.Core.Tests.csproj" />
+    <Project Path="tests/OpenGameVerse.Data.Tests/OpenGameVerse.Data.Tests.csproj" />
+  </Folder>
+</Solution>

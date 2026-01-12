@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenGameVerse.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        x:Class="OpenGameVerse.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="{Binding Title}"
+        Width="1200"
+        Height="800">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <DockPanel>
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="10">
+            <DockPanel>
+                <!-- Title and game count -->
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="10">
+                    <TextBlock Text="OpenGameVerse"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding TotalGames, StringFormat='({0} games)'}"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                </StackPanel>
+
+                <!-- Action buttons -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="5">
+                    <Button Content="Scan for Games"
+                            Command="{Binding ScanGamesCommand}"
+                            IsEnabled="{Binding !IsScanning}"/>
+                    <Button Content="Refresh"
+                            Command="{Binding RefreshCommand}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                Padding="10,5">
+            <DockPanel>
+                <TextBlock Text="{Binding StatusMessage}"
+                           VerticalAlignment="Center"/>
+                <ProgressBar DockPanel.Dock="Right"
+                             Width="100"
+                             Height="4"
+                             IsIndeterminate="True"
+                             IsVisible="{Binding IsScanning}"
+                             Margin="10,0,0,0"/>
+            </DockPanel>
+        </Border>
+
+        <!-- Game grid -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Games}"
+                          Padding="10">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="200"
+                                Height="280"
+                                Margin="5"
+                                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                CornerRadius="8"
+                                Padding="10">
+                            <StackPanel Spacing="8">
+                                <!-- Cover image placeholder -->
+                                <Border Width="180"
+                                        Height="180"
+                                        Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
+                                        CornerRadius="4">
+                                    <TextBlock Text="🎮"
+                                               FontSize="48"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- Game title -->
+                                <TextBlock Text="{Binding Title}"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"
+                                           MaxLines="1"
+                                           ToolTip.Tip="{Binding Title}"/>
+
+                                <!-- Platform -->
+                                <TextBlock Text="{Binding Platform}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+
+                                <!-- Size -->
+                                <TextBlock Text="{Binding SizeDisplay}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Empty state -->
+        <StackPanel HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="20"
+                    IsVisible="{Binding !Games.Count}">
+            <TextBlock Text="No games in your library"
+                       FontSize="24"
+                       FontWeight="Light"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Click 'Scan for Games' to discover your installed games"
+                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                       HorizontalAlignment="Center"/>
+            <Button Content="Scan for Games"
+                    Command="{Binding ScanGamesCommand}"
+                    HorizontalAlignment="Center"
+                    Padding="20,10"/>
+        </StackPanel>
+    </DockPanel>
+
+</Window>
