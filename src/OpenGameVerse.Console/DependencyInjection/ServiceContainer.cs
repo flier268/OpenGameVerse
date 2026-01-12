@@ -2,11 +2,8 @@ using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
 
-#if WINDOWS
-using OpenGameVerse.Platform.Windows;
-#else
 using OpenGameVerse.Platform.Linux;
-#endif
+using OpenGameVerse.Platform.Windows;
 
 namespace OpenGameVerse.Console.DependencyInjection;
 
@@ -34,11 +31,9 @@ public sealed class ServiceContainer
         Register<IGameRepository>(new GameRepository(connectionString));
 
         // Platform host
-#if WINDOWS
-        IPlatformHost platformHost = new WindowsPlatformHost();
-#else
-        IPlatformHost platformHost = new LinuxPlatformHost();
-#endif
+        IPlatformHost platformHost = OperatingSystem.IsWindows()
+            ? new WindowsPlatformHost()
+            : new LinuxPlatformHost();
         Register(platformHost);
     }
 
