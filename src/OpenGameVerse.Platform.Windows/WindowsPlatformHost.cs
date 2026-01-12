@@ -12,10 +12,12 @@ public sealed class WindowsPlatformHost : IPlatformHost
 {
     public PlatformType Platform => PlatformType.Windows;
 
+    private readonly IProcessLauncher _processLauncher;
     private readonly List<IGameScanner> _scanners;
 
     public WindowsPlatformHost()
     {
+        _processLauncher = new WindowsProcessLauncher();
         _scanners = new List<IGameScanner>
         {
             new SteamScanner(),
@@ -29,9 +31,16 @@ public sealed class WindowsPlatformHost : IPlatformHost
         return _scanners;
     }
 
-    public Task<Result> LaunchGameAsync(GameInstallation installation, CancellationToken ct)
+    public async Task<Result> LaunchGameAsync(GameInstallation installation, CancellationToken ct)
     {
-        // Phase 1: Not implemented
-        return Task.FromResult(Result.Failure("Game launching not implemented in Phase 1"));
+        if (string.IsNullOrWhiteSpace(installation.ExecutablePath))
+        {
+            return Result.Failure("No executable path configured for this game");
+        }
+
+        // Launch the game (no special environment variables needed on Windows)
+        return await _processLauncher.LaunchAsync(
+            installation.ExecutablePath,
+            ct: ct);
     }
 }

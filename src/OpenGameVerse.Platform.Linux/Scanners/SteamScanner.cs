@@ -2,6 +2,7 @@ using Gameloop.Vdf;
 using Gameloop.Vdf.Linq;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
+using OpenGameVerse.Platform.Linux.SteamOS;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
@@ -76,14 +77,31 @@ public sealed class SteamScanner : IGameScanner
     {
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
+        // Prioritize Steam Deck paths if running on Steam Deck
+        if (SteamOSDetector.IsSteamDeck())
+        {
+            var deckPaths = SteamOSDetector.GetSteamDeckSteamPaths();
+            var deckPath = deckPaths.FirstOrDefault(Directory.Exists);
+            if (deckPath != null)
+            {
+                return deckPath;
+            }
+        }
+
+        // Standard Linux Steam paths (in priority order)
         var paths = new[]
         {
-            Path.Combine(home, ".steam", "steam"),
-            Path.Combine(home, ".local", "share", "Steam"),
-            Path.Combine(home, "snap", "steam", "common", ".steam", "steam"),
-            Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam"),
+            // Flatpak Steam (common on modern distros)
+            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
             Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".steam", "steam"),
-            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam")
+
+            // Standard Steam installations
+            Path.Combine(home, ".local", "share", "Steam"),
+            Path.Combine(home, ".steam", "steam"),
+
+            // Snap Steam
+            Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam"),
+            Path.Combine(home, "snap", "steam", "common", ".steam", "steam")
         };
 
         return paths.FirstOrDefault(Directory.Exists);
