@@ -191,7 +191,7 @@ Check for IL2026, IL2087, IL3050 warnings.
 - [x] **Phase 1**: Core Kernel (SQLite, game scanning, AOT foundation) ✅
 - [x] **Phase 2**: Avalonia UI with responsive game grid ✅
 - [ ] **Phase 3**: IGDB metadata integration, cover art caching
-- [ ] **Phase 4**: Fullscreen mode with controller support
+- [x] **Phase 4**: Fullscreen mode with controller support
 - [ ] **Phase 5**: Linux optimization (SteamOS, binary size reduction)
 
 ## Contributing

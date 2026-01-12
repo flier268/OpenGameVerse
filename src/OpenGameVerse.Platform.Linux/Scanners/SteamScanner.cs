@@ -63,7 +63,7 @@ public sealed class SteamScanner : IGameScanner
             {
                 ct.ThrowIfCancellationRequested();
 
-                var installation = await ParseAcfManifestAsync(acfFile, libraryPath, ct);
+                var installation = await ParseAcfManifestAsync(acfFile, libraryPath, steamPath, ct);
                 if (installation != null)
                 {
                     yield return installation;
@@ -79,13 +79,21 @@ public sealed class SteamScanner : IGameScanner
         var paths = new[]
         {
             Path.Combine(home, ".steam", "steam"),
-            Path.Combine(home, ".local", "share", "Steam")
+            Path.Combine(home, ".local", "share", "Steam"),
+            Path.Combine(home, "snap", "steam", "common", ".steam", "steam"),
+            Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam"),
+            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".steam", "steam"),
+            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam")
         };
 
         return paths.FirstOrDefault(Directory.Exists);
     }
 
-    private async Task<GameInstallation?> ParseAcfManifestAsync(string acfPath, string libraryPath, CancellationToken ct)
+    private async Task<GameInstallation?> ParseAcfManifestAsync(
+        string acfPath,
+        string libraryPath,
+        string steamPath,
+        CancellationToken ct)
     {
         try
         {
@@ -121,12 +129,21 @@ public sealed class SteamScanner : IGameScanner
                 // Size calculation failed, not critical
             }
 
+            var coverImagePath = !string.IsNullOrWhiteSpace(appId)
+                ? GetSteamCoverPath(steamPath, appId)
+                : null;
+            var executablePath = !string.IsNullOrWhiteSpace(appId)
+                ? $"steam://run/{appId}"
+                : null;
+
             return new GameInstallation
             {
                 Title = name,
                 InstallPath = installPath,
                 Platform = "Steam",
                 PlatformId = appId,
+                ExecutablePath = executablePath,
+                CoverImagePath = coverImagePath,
                 SizeBytes = sizeBytes
             };
         }
@@ -134,5 +151,19 @@ public sealed class SteamScanner : IGameScanner
         {
             return null;
         }
+    }
+
+    private static string? GetSteamCoverPath(string steamPath, string appId)
+    {
+        var cacheDir = Path.Combine(steamPath, "appcache", "librarycache");
+        var candidates = new[]
+        {
+            Path.Combine(cacheDir, $"{appId}_library_600x900.jpg"),
+            Path.Combine(cacheDir, $"{appId}_library_600x900.png"),
+            Path.Combine(cacheDir, $"{appId}_library_capsule.jpg"),
+            Path.Combine(cacheDir, $"{appId}_library_capsule.png")
+        };
+
+        return candidates.FirstOrDefault(File.Exists);
     }
 }

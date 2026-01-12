@@ -29,7 +29,9 @@ public sealed class MetadataService : IMetadataService
                 var directResult = await _igdbClient.GetGameByIdAsync(igdbId, ct);
                 if (directResult.IsSuccess && directResult.Value != null)
                 {
-                    return Result<GameMetadata?>.Success(MapToMetadata(directResult.Value));
+                    var directMetadata = MapToMetadata(directResult.Value);
+                    await PopulateCoverAsync(directResult.Value, directMetadata, ct);
+                    return Result<GameMetadata?>.Success(directMetadata);
                 }
             }
 
@@ -46,15 +48,7 @@ public sealed class MetadataService : IMetadataService
 
             var metadata = MapToMetadata(bestMatch);
 
-            // Fetch cover if available
-            if (bestMatch.Cover.HasValue)
-            {
-                var coverResult = await _igdbClient.GetCoverAsync(bestMatch.Cover.Value, ct);
-                if (coverResult.IsSuccess && coverResult.Value != null)
-                {
-                    metadata.CoverImageUrl = coverResult.Value.GetImageUrl("cover_big");
-                }
-            }
+            await PopulateCoverAsync(bestMatch, metadata, ct);
 
             return Result<GameMetadata?>.Success(metadata);
         }
@@ -126,5 +120,19 @@ public sealed class MetadataService : IMetadataService
         }
 
         return metadata;
+    }
+
+    private async Task PopulateCoverAsync(IgdbGame igdbGame, GameMetadata metadata, CancellationToken ct)
+    {
+        if (!igdbGame.Cover.HasValue)
+        {
+            return;
+        }
+
+        var coverResult = await _igdbClient.GetCoverAsync(igdbGame.Cover.Value, ct);
+        if (coverResult.IsSuccess && coverResult.Value != null)
+        {
+            metadata.CoverImageUrl = coverResult.Value.GetImageUrl("cover_big");
+        }
     }
 }

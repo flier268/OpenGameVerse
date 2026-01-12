@@ -74,6 +74,7 @@ public sealed class ScanCommand
                     Platform = game.Platform,
                     ExecutablePath = game.ExecutablePath,
                     IconPath = game.IconPath,
+                    CoverImagePath = game.CoverImagePath,
                     SizeBytes = game.SizeBytes,
                     DiscoveredAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow

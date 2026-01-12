@@ -108,7 +108,7 @@ dotnet publish -c Release /p:PublishAot=true
 1. **Phase 1 (Kernel)**: SQLite access and basic game scanning under AOT constraints
 2. **Phase 2 (UX Framework)**: Avalonia main window with responsive game list
 3. **Phase 3 (Metadata)**: IGDB API integration and local image cache
-4. **Phase 4 (Fullscreen)**: Controller input mapping and big-screen navigation
+4. **Phase 4 (Fullscreen)**: Controller input mapping and big-screen navigation (complete)
 5. **Phase 5 (Polishing)**: Linux distro compatibility (SteamOS/Ubuntu) and binary size optimization
 
 ## Platform-Specific Considerations

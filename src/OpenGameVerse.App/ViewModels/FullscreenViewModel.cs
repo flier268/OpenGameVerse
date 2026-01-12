@@ -1,22 +1,20 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Metadata.Abstractions;
-using OpenGameVerse.App.Views;
 
 namespace OpenGameVerse.App.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class FullscreenViewModel : ViewModelBase
 {
     private readonly IGameRepository _gameRepository;
     private readonly IPlatformHost _platformHost;
     private readonly IMetadataService? _metadataService;
-
-    [ObservableProperty]
-    public partial string Title { get; set; } = "OpenGameVerse - Game Library";
+    private readonly Window _parentWindow;
 
     [ObservableProperty]
     public partial ObservableCollection<GameViewModel> Games { get; set; } = new();
@@ -30,10 +28,15 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial int TotalGames { get; set; }
 
-    public MainWindowViewModel(IGameRepository gameRepository, IPlatformHost platformHost, IMetadataService? metadataService = null)
+    public FullscreenViewModel(
+        IGameRepository gameRepository,
+        IPlatformHost platformHost,
+        Window parentWindow,
+        IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
         _platformHost = platformHost;
+        _parentWindow = parentWindow;
         _metadataService = metadataService;
     }
 
@@ -68,7 +71,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
             }
 
-            StatusMessage = $"Loaded {Games.Count} games";
+            StatusMessage = $"Loaded {Games.Count} games - Ready to play!";
         }
         catch (Exception ex)
         {
@@ -166,25 +169,73 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task EnterFullscreenAsync(Window? parentWindow)
+    private void ExitFullscreen()
     {
-        if (parentWindow == null || !parentWindow.IsVisible)
+        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            return;
+            // Close fullscreen window and show main window
+            _parentWindow.Show();
+
+            // Find and close fullscreen window
+            foreach (var window in desktop.Windows)
+            {
+                if (window is Views.FullscreenWindow)
+                {
+                    window.Close();
+                    break;
+                }
+            }
         }
+    }
 
-        var fullscreenViewModel = new FullscreenViewModel(_gameRepository, _platformHost, parentWindow, _metadataService);
-        var fullscreenWindow = new FullscreenWindow
+    public async Task LaunchGameAsync(GameViewModel gameViewModel)
+    {
+        try
         {
-            DataContext = fullscreenViewModel
-        };
+            StatusMessage = $"Launching {gameViewModel.Title}...";
 
-        fullscreenWindow.Closed += (_, _) => parentWindow.Show();
+            // Get full game data from repository
+            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
 
-        parentWindow.Hide();
-        fullscreenWindow.Show();
+            if (!gameResult.IsSuccess || gameResult.Value == null)
+            {
+                StatusMessage = $"Error: Could not find game data for {gameViewModel.Title}";
+                return;
+            }
 
-        await fullscreenViewModel.InitializeAsync();
+            var game = gameResult.Value;
+
+            // Create GameInstallation for launching
+            var installation = new GameInstallation
+            {
+                Title = game.Title,
+                InstallPath = game.InstallPath,
+                Platform = game.Platform,
+                ExecutablePath = game.ExecutablePath,
+                IconPath = game.IconPath,
+                SizeBytes = game.SizeBytes
+            };
+
+            // Launch through platform host
+            var launchResult = await _platformHost.LaunchGameAsync(installation, CancellationToken.None);
+
+            if (launchResult.IsSuccess)
+            {
+                // Update last played
+                game.LastPlayed = DateTime.UtcNow;
+                await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
+
+                StatusMessage = $"Launched {game.Title}";
+            }
+            else
+            {
+                StatusMessage = $"Failed to launch {game.Title}: {launchResult.Error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Launch error: {ex.Message}";
+        }
     }
 
     private async Task EnrichGameMetadataAsync(Game game, GameViewModel gameVm)
@@ -199,12 +250,6 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
 
             var metadata = metadataResult.Value;
-
-            // Update view model with metadata
-            if (!string.IsNullOrEmpty(metadata.Summary))
-            {
-                // Can add Summary property to GameViewModel later
-            }
 
             // Download cover art if available
             if (!string.IsNullOrEmpty(metadata.CoverImageUrl))

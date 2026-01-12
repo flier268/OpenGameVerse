@@ -9,22 +9,22 @@ namespace OpenGameVerse.App.ViewModels;
 public partial class GameViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private long _id;
+    public partial long Id { get; set; }
 
     [ObservableProperty]
-    private string _title = string.Empty;
+    public partial string Title { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _platform = string.Empty;
+    public partial string Platform { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _installPath = string.Empty;
+    public partial string InstallPath { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string? _coverImagePath;
+    public partial string? CoverImagePath { get; set; }
 
     [ObservableProperty]
-    private long _sizeBytes;
+    public partial long SizeBytes { get; set; }
 
     public string SizeDisplay => SizeBytes > 0
         ? $"{SizeBytes / (1024.0 * 1024.0 * 1024.0):F2} GB"

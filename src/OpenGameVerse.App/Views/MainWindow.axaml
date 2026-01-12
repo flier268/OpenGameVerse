@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:OpenGameVerse.App.ViewModels"
+        xmlns:conv="using:OpenGameVerse.App.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
@@ -39,6 +40,9 @@
                             IsEnabled="{Binding !IsScanning}"/>
                     <Button Content="Refresh"
                             Command="{Binding RefreshCommand}"/>
+                    <Button Content="Fullscreen Mode"
+                            Command="{Binding EnterFullscreenCommand}"
+                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -79,15 +83,22 @@
                                 CornerRadius="8"
                                 Padding="10">
                             <StackPanel Spacing="8">
-                                <!-- Cover image placeholder -->
+                                <!-- Cover image -->
                                 <Border Width="180"
                                         Height="180"
                                         Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                                        CornerRadius="4">
-                                    <TextBlock Text="🎮"
-                                               FontSize="48"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Center"/>
+                                        CornerRadius="4"
+                                        ClipToBounds="True">
+                                    <Panel>
+                                        <TextBlock Text="🎮"
+                                                   FontSize="48"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNull}}"/>
+                                        <Image Source="{Binding CoverImagePath, Converter={x:Static conv:FilePathToBitmapConverter.Instance}}"
+                                               Stretch="Uniform"
+                                               IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                    </Panel>
                                 </Border>
 
                                 <!-- Game title -->

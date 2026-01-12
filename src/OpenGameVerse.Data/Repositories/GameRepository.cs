@@ -118,7 +118,24 @@ public sealed class GameRepository : IGameRepository
             await using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(ct);
 
-            const string sql = "SELECT * FROM games WHERE id = @Id;";
+            const string sql = """
+                SELECT
+                    id,
+                    title,
+                    normalized_title,
+                    install_path,
+                    platform,
+                    executable_path,
+                    icon_path,
+                    size_bytes,
+                    datetime(last_played, 'unixepoch') AS last_played,
+                    datetime(discovered_at, 'unixepoch') AS discovered_at,
+                    datetime(updated_at, 'unixepoch') AS updated_at,
+                    igdb_id,
+                    cover_image_path
+                FROM games
+                WHERE id = @Id;
+                """;
             var game = await connection.QueryFirstOrDefaultAsync<Game>(sql, new { Id = id });
 
             return Result<Game?>.Success(game);
@@ -137,7 +154,24 @@ public sealed class GameRepository : IGameRepository
             await using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(ct);
 
-            const string sql = "SELECT * FROM games WHERE install_path = @InstallPath;";
+            const string sql = """
+                SELECT
+                    id,
+                    title,
+                    normalized_title,
+                    install_path,
+                    platform,
+                    executable_path,
+                    icon_path,
+                    size_bytes,
+                    datetime(last_played, 'unixepoch') AS last_played,
+                    datetime(discovered_at, 'unixepoch') AS discovered_at,
+                    datetime(updated_at, 'unixepoch') AS updated_at,
+                    igdb_id,
+                    cover_image_path
+                FROM games
+                WHERE install_path = @InstallPath;
+                """;
             var game = await connection.QueryFirstOrDefaultAsync<Game>(sql, new { InstallPath = installPath });
 
             return Result<Game?>.Success(game);
@@ -154,7 +188,24 @@ public sealed class GameRepository : IGameRepository
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(ct);
 
-        const string sql = "SELECT * FROM games ORDER BY title;";
+        const string sql = """
+            SELECT
+                id,
+                title,
+                normalized_title,
+                install_path,
+                platform,
+                executable_path,
+                icon_path,
+                size_bytes,
+                datetime(last_played, 'unixepoch') AS last_played,
+                datetime(discovered_at, 'unixepoch') AS discovered_at,
+                datetime(updated_at, 'unixepoch') AS updated_at,
+                igdb_id,
+                cover_image_path
+            FROM games
+            ORDER BY title;
+            """;
 
         await foreach (var game in connection.QueryUnbufferedAsync<Game>(sql).WithCancellation(ct))
         {

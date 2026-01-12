@@ -12,5 +12,6 @@ public sealed class GameInstallation
     public string? PlatformId { get; set; } // App ID, catalog item ID, etc.
     public string? ExecutablePath { get; set; }
     public string? IconPath { get; set; }
+    public string? CoverImagePath { get; set; }
     public long SizeBytes { get; set; }
 }
