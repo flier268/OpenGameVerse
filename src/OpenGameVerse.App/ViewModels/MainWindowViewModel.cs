@@ -6,20 +6,26 @@ using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Metadata.Abstractions;
 using OpenGameVerse.App.Views;
+using OpenGameVerse.App.Services;
 
 namespace OpenGameVerse.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IGameRepository _gameRepository;
+    private readonly ICategoryRepository _categoryRepository;
     private readonly IPlatformHost _platformHost;
     private readonly IMetadataService? _metadataService;
+    private readonly IDialogService _dialogService;
 
     [ObservableProperty]
     public partial string Title { get; set; } = "OpenGameVerse - Game Library";
 
     [ObservableProperty]
     public partial ObservableCollection<GameViewModel> Games { get; set; } = new();
+
+    [ObservableProperty]
+    public partial ObservableCollection<GameViewModel> FilteredGames { get; set; } = new();
 
     [ObservableProperty]
     public partial string StatusMessage { get; set; } = "Ready";
@@ -30,11 +36,47 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial int TotalGames { get; set; }
 
-    public MainWindowViewModel(IGameRepository gameRepository, IPlatformHost platformHost, IMetadataService? metadataService = null)
+    [ObservableProperty]
+    public partial string SearchText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string? SelectedPlatformFilter { get; set; } = "All Platforms";
+
+    [ObservableProperty]
+    public partial string? SelectedCategoryFilter { get; set; } = "All Categories";
+
+    [ObservableProperty]
+    public partial bool ShowFavoritesOnly { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsGridView { get; set; } = true;
+
+    public ObservableCollection<string> AvailablePlatforms { get; } = new() { "All Platforms" };
+    public ObservableCollection<string> AvailableCategories { get; } = new() { "All Categories" };
+
+    /// <summary>
+    /// Available categories for assignment (without "All Categories" and "Uncategorized")
+    /// </summary>
+    [ObservableProperty]
+    public partial ObservableCollection<string> CategoriesForAssignment { get; set; } = new();
+
+    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
+        _categoryRepository = categoryRepository;
         _platformHost = platformHost;
         _metadataService = metadataService;
+        _dialogService = dialogService;
+
+        // Wire up property changed events for filtering
+        PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(SearchText) or nameof(SelectedPlatformFilter)
+                or nameof(SelectedCategoryFilter) or nameof(ShowFavoritesOnly))
+            {
+                ApplyFilters();
+            }
+        };
     }
 
     public async Task InitializeAsync()
@@ -69,6 +111,12 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             StatusMessage = $"Loaded {Games.Count} games";
+
+            // Update available platforms and categories
+            await UpdateFiltersAsync();
+
+            // Apply initial filter
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -167,6 +215,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
             StatusMessage = $"Scan complete: Found {gamesFound}, added {gamesAdded} new games";
             TotalGames = Games.Count;
+
+            // Refresh filters so newly added games appear in the visible list
+            await UpdateFiltersAsync();
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -247,6 +299,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
     public async Task LaunchGameAsync(GameViewModel gameViewModel)
     {
         try
@@ -294,6 +347,256 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessage = $"Launch error: {ex.Message}";
+        }
+    }
+
+    private async Task UpdateFiltersAsync()
+    {
+        // Update platform list
+        var platforms = Games.Select(g => g.Platform).Distinct().OrderBy(p => p).ToList();
+        AvailablePlatforms.Clear();
+        AvailablePlatforms.Add("All Platforms");
+        foreach (var platform in platforms)
+        {
+            AvailablePlatforms.Add(platform);
+        }
+        if (string.IsNullOrEmpty(SelectedPlatformFilter) || !AvailablePlatforms.Contains(SelectedPlatformFilter))
+        {
+            SelectedPlatformFilter = "All Platforms";
+        }
+
+        // Update category list from repository and existing game assignments
+        var categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        await foreach (var (name, _) in _categoryRepository.GetAllCategoriesAsync(CancellationToken.None))
+        {
+            if (!string.IsNullOrWhiteSpace(name) && name != "Uncategorized")
+            {
+                categories.Add(name);
+            }
+        }
+
+        foreach (var category in Games
+            .Where(g => !string.IsNullOrEmpty(g.CustomCategory))
+            .Select(g => g.CustomCategory!))
+        {
+            categories.Add(category);
+        }
+
+        var orderedCategories = categories.OrderBy(c => c).ToList();
+        AvailableCategories.Clear();
+        AvailableCategories.Add("All Categories");
+        AvailableCategories.Add("Uncategorized");
+        foreach (var category in orderedCategories)
+        {
+            AvailableCategories.Add(category);
+        }
+        if (string.IsNullOrEmpty(SelectedCategoryFilter) || !AvailableCategories.Contains(SelectedCategoryFilter))
+        {
+            SelectedCategoryFilter = "All Categories";
+        }
+
+        // Update assignment categories (for right-click menu)
+        CategoriesForAssignment.Clear();
+        foreach (var category in orderedCategories)
+        {
+            CategoriesForAssignment.Add(category);
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = Games.AsEnumerable();
+
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var searchLower = SearchText.ToLowerInvariant();
+            filtered = filtered.Where(g => g.Title.ToLowerInvariant().Contains(searchLower));
+        }
+
+        // Favorites filter
+        if (ShowFavoritesOnly)
+        {
+            filtered = filtered.Where(g => g.IsFavorite);
+        }
+
+        // Platform filter
+        if (!string.IsNullOrEmpty(SelectedPlatformFilter) && SelectedPlatformFilter != "All Platforms")
+        {
+            filtered = filtered.Where(g => g.Platform == SelectedPlatformFilter);
+        }
+
+        // Category filter
+        if (!string.IsNullOrEmpty(SelectedCategoryFilter) && SelectedCategoryFilter != "All Categories")
+        {
+            if (SelectedCategoryFilter == "Uncategorized")
+            {
+                filtered = filtered.Where(g => string.IsNullOrEmpty(g.CustomCategory));
+            }
+            else
+            {
+                filtered = filtered.Where(g => g.CustomCategory == SelectedCategoryFilter);
+            }
+        }
+
+        // Sort: Favorites first, then by custom sort order within category, then by title
+        filtered = filtered
+            .OrderByDescending(g => g.IsFavorite)
+            .ThenBy(g => g.CustomCategory ?? string.Empty)
+            .ThenBy(g => g.SortOrder)
+            .ThenBy(g => g.Title);
+
+        FilteredGames.Clear();
+        foreach (var game in filtered)
+        {
+            FilteredGames.Add(game);
+        }
+    }
+
+    [RelayCommand]
+    private async Task ToggleFavoriteAsync(GameViewModel gameViewModel)
+    {
+        try
+        {
+            gameViewModel.IsFavorite = !gameViewModel.IsFavorite;
+
+            // Update in database
+            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+            if (gameResult.IsSuccess && gameResult.Value != null)
+            {
+                var game = gameResult.Value;
+                game.IsFavorite = gameViewModel.IsFavorite;
+                await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
+            }
+
+            // Reapply filters to update order
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error toggling favorite: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task SetCategoryAsync(GameViewModel gameViewModel)
+    {
+        try
+        {
+            // For now, set to null (uncategorized)
+            // In a full implementation, this would open a dialog to select/create category
+            gameViewModel.CustomCategory = null;
+
+            // Update in database
+            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+            if (gameResult.IsSuccess && gameResult.Value != null)
+            {
+                var game = gameResult.Value;
+                game.CustomCategory = null;
+                await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
+            }
+
+            // Update available categories
+            await UpdateFiltersAsync();
+
+            // Reapply filters
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error setting category: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task SetCategoryToAsync((GameViewModel game, string category) args)
+    {
+        try
+        {
+            args.game.CustomCategory = args.category;
+
+            // Update in database
+            var gameResult = await _gameRepository.GetGameByIdAsync(args.game.Id, CancellationToken.None);
+            if (gameResult.IsSuccess && gameResult.Value != null)
+            {
+                var game = gameResult.Value;
+                game.CustomCategory = args.category;
+                await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
+            }
+
+            // Update available categories
+            await UpdateFiltersAsync();
+
+            // Reapply filters
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error setting category: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void ClearFilters()
+    {
+        SearchText = string.Empty;
+        SelectedPlatformFilter = "All Platforms";
+        SelectedCategoryFilter = "All Categories";
+        ShowFavoritesOnly = false;
+    }
+
+    [RelayCommand]
+    private void ToggleView()
+    {
+        IsGridView = !IsGridView;
+    }
+
+    [RelayCommand]
+    private async Task CreateNewCategoryAsync(GameViewModel gameViewModel)
+    {
+        try
+        {
+            var categoryName = await _dialogService.ShowCategoryInputDialogAsync();
+            if (!string.IsNullOrEmpty(categoryName) && gameViewModel != null)
+            {
+                var trimmedName = categoryName.Trim();
+                if (string.IsNullOrEmpty(trimmedName))
+                {
+                    return;
+                }
+
+                var exists = await _categoryRepository.CategoryExistsAsync(trimmedName, CancellationToken.None);
+                if (!exists)
+                {
+                    var added = await _categoryRepository.AddCategoryAsync(trimmedName, CancellationToken.None);
+                    if (!added)
+                    {
+                        StatusMessage = $"Error creating category: {trimmedName}";
+                        return;
+                    }
+                }
+
+                await SetCategoryToCommand.ExecuteAsync((gameViewModel, trimmedName));
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error creating category: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task ManageCategoriesAsync()
+    {
+        try
+        {
+            await _dialogService.ShowCategoryManagerAsync(_gameRepository, _categoryRepository);
+            // Reload games so deleted categories are reflected in the visible list
+            await LoadGamesAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error managing categories: {ex.Message}";
         }
     }
 }

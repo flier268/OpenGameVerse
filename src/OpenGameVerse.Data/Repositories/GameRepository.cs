@@ -31,11 +31,13 @@ public sealed class GameRepository : IGameRepository
                 INSERT INTO games (
                     title, normalized_title, install_path, platform,
                     executable_path, icon_path, size_bytes,
-                    discovered_at, updated_at, igdb_id, cover_image_path
+                    discovered_at, updated_at, igdb_id, cover_image_path,
+                    is_favorite, custom_category, sort_order
                 ) VALUES (
                     @Title, @NormalizedTitle, @InstallPath, @Platform,
                     @ExecutablePath, @IconPath, @SizeBytes,
-                    unixepoch(), unixepoch(), @IgdbId, @CoverImagePath
+                    unixepoch(), unixepoch(), @IgdbId, @CoverImagePath,
+                    @IsFavorite, @CustomCategory, @SortOrder
                 )
                 RETURNING id;
                 """;
@@ -50,7 +52,10 @@ public sealed class GameRepository : IGameRepository
                 game.IconPath,
                 game.SizeBytes,
                 game.IgdbId,
-                game.CoverImagePath
+                game.CoverImagePath,
+                game.IsFavorite,
+                game.CustomCategory,
+                game.SortOrder
             });
 
             return Result<long>.Success(id);
@@ -81,7 +86,10 @@ public sealed class GameRepository : IGameRepository
                     last_played = @LastPlayed,
                     updated_at = unixepoch(),
                     igdb_id = @IgdbId,
-                    cover_image_path = @CoverImagePath
+                    cover_image_path = @CoverImagePath,
+                    is_favorite = @IsFavorite,
+                    custom_category = @CustomCategory,
+                    sort_order = @SortOrder
                 WHERE id = @Id;
                 """;
 
@@ -99,7 +107,10 @@ public sealed class GameRepository : IGameRepository
                     ? new DateTimeOffset(game.LastPlayed.Value).ToUnixTimeSeconds()
                     : (long?)null,
                 game.IgdbId,
-                game.CoverImagePath
+                game.CoverImagePath,
+                game.IsFavorite,
+                game.CustomCategory,
+                game.SortOrder
             });
 
             return Result.Success();
@@ -132,7 +143,10 @@ public sealed class GameRepository : IGameRepository
                     datetime(discovered_at, 'unixepoch') AS discovered_at,
                     datetime(updated_at, 'unixepoch') AS updated_at,
                     igdb_id,
-                    cover_image_path
+                    cover_image_path,
+                    is_favorite,
+                    custom_category,
+                    sort_order
                 FROM games
                 WHERE id = @Id;
                 """;
@@ -168,7 +182,10 @@ public sealed class GameRepository : IGameRepository
                     datetime(discovered_at, 'unixepoch') AS discovered_at,
                     datetime(updated_at, 'unixepoch') AS updated_at,
                     igdb_id,
-                    cover_image_path
+                    cover_image_path,
+                    is_favorite,
+                    custom_category,
+                    sort_order
                 FROM games
                 WHERE install_path = @InstallPath;
                 """;
@@ -202,7 +219,10 @@ public sealed class GameRepository : IGameRepository
                 datetime(discovered_at, 'unixepoch') AS discovered_at,
                 datetime(updated_at, 'unixepoch') AS updated_at,
                 igdb_id,
-                cover_image_path
+                cover_image_path,
+                is_favorite,
+                custom_category,
+                sort_order
             FROM games
             ORDER BY title;
             """;

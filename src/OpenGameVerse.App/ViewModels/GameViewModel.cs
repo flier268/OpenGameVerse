@@ -26,6 +26,15 @@ public partial class GameViewModel : ViewModelBase
     [ObservableProperty]
     public partial long SizeBytes { get; set; }
 
+    [ObservableProperty]
+    public partial bool IsFavorite { get; set; }
+
+    [ObservableProperty]
+    public partial string? CustomCategory { get; set; }
+
+    [ObservableProperty]
+    public partial int SortOrder { get; set; }
+
     public string SizeDisplay => SizeBytes > 0
         ? $"{SizeBytes / (1024.0 * 1024.0 * 1024.0):F2} GB"
         : "Unknown";
@@ -39,7 +48,10 @@ public partial class GameViewModel : ViewModelBase
             Platform = game.Platform,
             InstallPath = game.InstallPath,
             CoverImagePath = game.CoverImagePath,
-            SizeBytes = game.SizeBytes
+            SizeBytes = game.SizeBytes,
+            IsFavorite = game.IsFavorite,
+            CustomCategory = game.CustomCategory,
+            SortOrder = game.SortOrder
         };
     }
 }

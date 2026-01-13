@@ -20,4 +20,9 @@ public sealed class Game
     // Metadata (Phase 3)
     public string? IgdbId { get; set; }
     public string? CoverImagePath { get; set; }
+
+    // User organization (Phase 6)
+    public bool IsFavorite { get; set; }
+    public string? CustomCategory { get; set; }  // Null = no category, otherwise user-defined category name
+    public int SortOrder { get; set; }  // For custom ordering within categories
 }

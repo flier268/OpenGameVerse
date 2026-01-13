@@ -53,25 +53,69 @@ public sealed class DatabaseContext
 
     private void RunMigrations()
     {
-        // Read embedded migration script
-        var assembly = Assembly.GetExecutingAssembly();
-        var resourceName = "OpenGameVerse.Data.Migrations.InitialSchema.sql";
-
-        using var stream = assembly.GetManifestResourceStream(resourceName);
-        if (stream == null)
-        {
-            throw new InvalidOperationException($"Migration script not found: {resourceName}");
-        }
-
-        using var reader = new StreamReader(stream);
-        var migrationSql = reader.ReadToEnd();
-
-        // Execute migration
         using var connection = new SqliteConnection(_connectionString);
         connection.Open();
 
-        using var command = connection.CreateCommand();
-        command.CommandText = migrationSql;
-        command.ExecuteNonQuery();
+        // Get current schema version
+        int currentVersion = GetSchemaVersion(connection);
+
+        // List of migrations to apply
+        var migrations = new[]
+        {
+            (version: 1, script: "OpenGameVerse.Data.Migrations.InitialSchema.sql"),
+            (version: 2, script: "OpenGameVerse.Data.Migrations.002_AddUserOrganization.sql"),
+            (version: 3, script: "OpenGameVerse.Data.Migrations.003_AddCategoriesTable.sql")
+        };
+
+        var assembly = Assembly.GetExecutingAssembly();
+
+        foreach (var migration in migrations)
+        {
+            if (migration.version <= currentVersion)
+            {
+                continue; // Already applied
+            }
+
+            using var stream = assembly.GetManifestResourceStream(migration.script);
+            if (stream == null)
+            {
+                throw new InvalidOperationException($"Migration script not found: {migration.script}");
+            }
+
+            using var reader = new StreamReader(stream);
+            var migrationSql = reader.ReadToEnd();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = migrationSql;
+
+            try
+            {
+                command.ExecuteNonQuery();
+            }
+            catch (SqliteException ex) when (ex.Message.Contains("duplicate column"))
+            {
+                // Column already exists, skip and continue
+                // Update schema version anyway
+                using var versionCommand = connection.CreateCommand();
+                versionCommand.CommandText = $"INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES ({migration.version}, unixepoch());";
+                versionCommand.ExecuteNonQuery();
+            }
+        }
+    }
+
+    private int GetSchemaVersion(SqliteConnection connection)
+    {
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT MAX(version) FROM schema_version;";
+            var result = command.ExecuteScalar();
+            return result is int version ? version : 0;
+        }
+        catch
+        {
+            // Table doesn't exist yet
+            return 0;
+        }
     }
 }

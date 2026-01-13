@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenGameVerse.App.ViewModels"
+        x:Class="OpenGameVerse.App.Views.CategoryInputDialog"
+        x:DataType="vm:CategoryInputDialogViewModel"
+        Title="Create New Category"
+        Width="400"
+        Height="150"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Border Padding="20">
+        <StackPanel Spacing="15">
+            <TextBlock Text="Category Name:" FontWeight="SemiBold"/>
+
+            <TextBox Name="CategoryNameBox"
+                     Text="{Binding CategoryName}"
+                     Watermark="Enter category name..."
+                     MinHeight="40"/>
+
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <Button Name="OkButton"
+                        Content="OK"
+                        Width="80"
+                        Command="{Binding OkCommand}"
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+                <Button Name="CancelButton"
+                        Content="Cancel"
+                        Width="80"
+                        Command="{Binding CancelCommand}"
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+
+</Window>

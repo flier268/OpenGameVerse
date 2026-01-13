@@ -1,0 +1,77 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:OpenGameVerse.App.ViewModels"
+        x:Class="OpenGameVerse.App.Views.CategoryManagerWindow"
+        x:DataType="vm:CategoryManagerViewModel"
+        Title="Manage Categories"
+        Width="400"
+        Height="500"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Design.DataContext>
+        <vm:CategoryManagerViewModel/>
+    </Design.DataContext>
+
+    <DockPanel>
+        <!-- Toolbar -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SystemControlBackgroundAltHighBrush}" Padding="10">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+                    <Button Content="Add Category"
+                            Width="100"
+                            IsEnabled="{Binding !IsLoading}"
+                            Command="{Binding AddCategoryCommand}"/>
+                    <Button Content="Delete"
+                            Width="80"
+                            Command="{Binding DeleteCategoryCommand}"/>
+                </StackPanel>
+                <ProgressBar Grid.Column="1"
+                             Width="40"
+                             Height="4"
+                             IsIndeterminate="True"
+                             IsVisible="{Binding IsLoading}"
+                             Margin="10,0,0,0"
+                             VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Category list -->
+        <ScrollViewer DockPanel.Dock="Top">
+            <ListBox ItemsSource="{Binding Categories}"
+                     SelectedItem="{Binding SelectedCategory}"
+                     Padding="10"
+                     SelectionMode="Single">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="10"
+                                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                                CornerRadius="4">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding Name}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding Count, StringFormat='({0} games)'}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                                           VerticalAlignment="Center"
+                                           Margin="10,0,0,0"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </ScrollViewer>
+
+        <!-- Close button -->
+        <Border DockPanel.Dock="Bottom" Padding="10">
+            <Button Content="Close"
+                    HorizontalAlignment="Right"
+                    Width="80"
+                    Command="{Binding CloseCommand}"
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+        </Border>
+    </DockPanel>
+
+</Window>

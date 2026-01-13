@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using OpenGameVerse.App.ViewModels;
 using OpenGameVerse.App.Views;
+using OpenGameVerse.App.Services;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
@@ -20,8 +21,10 @@ namespace OpenGameVerse.App;
 public partial class App : Application
 {
     private IGameRepository? _gameRepository;
+    private ICategoryRepository? _categoryRepository;
     private IPlatformHost? _platformHost;
     private IMetadataService? _metadataService;
+    private DialogService? _dialogService;
 
     public override void Initialize()
     {
@@ -43,6 +46,7 @@ public partial class App : Application
         dbContext.Initialize();
 
         _gameRepository = new GameRepository(connectionString);
+        _categoryRepository = new CategoryRepository(connectionString);
 
         // Platform host
 #if WINDOWS
@@ -67,19 +71,23 @@ public partial class App : Application
             var imageCache = new ImageCache(cacheDir);
             _metadataService = new MetadataService(igdbClient, imageCache);
         }
+
+        // Dialog service
+        _dialogService = new DialogService();
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var viewModel = new MainWindowViewModel(_gameRepository!, _platformHost!, _metadataService);
+            var mainWindow = new MainWindow();
 
-            var mainWindow = new MainWindow
-            {
-                DataContext = viewModel
-            };
+            // Set dialog service's main window
+            _dialogService?.SetMainWindow(mainWindow);
 
+            var viewModel = new MainWindowViewModel(_gameRepository!, _categoryRepository!, _platformHost!, _dialogService!, _metadataService);
+
+            mainWindow.DataContext = viewModel;
             desktop.MainWindow = mainWindow;
 
             // Initialize after window is created
