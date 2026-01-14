@@ -2,10 +2,11 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using OpenGameVerse.App.ViewModels;
+using SukiUI.Controls;
 
 namespace OpenGameVerse.App.Views;
 
-public partial class MainWindow : Window
+public partial class MainWindow : SukiWindow
 {
     private GameViewModel? _contextMenuGameVm;
 

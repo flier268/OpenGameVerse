@@ -1,9 +1,9 @@
-using Avalonia.Controls;
+using SukiUI.Controls;
 using OpenGameVerse.App.ViewModels;
 
 namespace OpenGameVerse.App.Views;
 
-public partial class CategoryInputDialog : Window
+public partial class CategoryInputDialog : SukiWindow
 {
     public CategoryInputDialog()
     {

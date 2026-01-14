@@ -1,5 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:suki="clr-namespace:SukiUI;assembly=SukiUI"
              x:Class="OpenGameVerse.App.App"
              xmlns:local="using:OpenGameVerse.App"
              xmlns:conv="using:OpenGameVerse.App.Converters"
@@ -15,6 +16,6 @@
     </Application.DataTemplates>
 
     <Application.Styles>
-        <FluentTheme />
+        <suki:SukiTheme Locale="zh-TW" ThemeColor="Blue" />
     </Application.Styles>
 </Application>

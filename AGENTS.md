@@ -2,39 +2,46 @@
 
 ## Project Structure & Module Organization
 
-- `src/OpenGameVerse.Core/` holds domain models, abstractions, and JSON source generation.
-- `src/OpenGameVerse.Data/` contains SQLite access and Dapper.AOT repositories plus migrations.
-- `src/OpenGameVerse.Platform.Windows/` and `src/OpenGameVerse.Platform.Linux/` implement platform-specific scanning and host logic.
-- `src/OpenGameVerse.Console/` is the CLI entry point with manual dependency injection.
-- `tests/` is reserved for unit tests (Phase 2); it is currently empty.
+- `src/`: production code organized by module.
+  - `OpenGameVerse.Core/` domain models, abstractions, JSON source-gen context.
+  - `OpenGameVerse.Data/` SQLite repositories and migrations.
+  - `OpenGameVerse.Platform.Windows/` and `OpenGameVerse.Platform.Linux/` platform scanners/launchers.
+  - `OpenGameVerse.Console/` CLI entry point.
+  - `OpenGameVerse.App/` Avalonia UI (desktop/fullscreen).
+- `tests/`: xUnit test projects (Core/Data).
+- Assets: Avalonia assets live under `src/OpenGameVerse.App/Assets/`.
 
 ## Build, Test, and Development Commands
 
-- `dotnet build` builds the solution for development.
-- `dotnet run --project src/OpenGameVerse.Console/OpenGameVerse.Console.csproj -- scan` runs the CLI scanner from source.
-- `dotnet publish -c Release src/OpenGameVerse.Console/OpenGameVerse.Console.csproj` produces a release AOT build.
-- `dotnet publish -c Release -r win-x64` or `dotnet publish -c Release -r linux-x64` targets a specific runtime.
-- `dotnet publish -c Release /p:PublishAot=true` verifies Native AOT compatibility (check for IL2026/IL2087/IL3050 warnings).
+- `dotnet build`: dev build for all projects.
+- `dotnet publish -c Release`: Native AOT publish for current platform.
+- `dotnet publish -c Release -r win-x64` / `linux-x64`: AOT publish for a target runtime.
+- `dotnet publish -c Release /p:PublishAot=true`: AOT compatibility check (required before commits).
+- `dotnet run --project src/OpenGameVerse.Console/OpenGameVerse.Console.csproj -- scan`: run CLI scan.
+- `dotnet run --project src/OpenGameVerse.App/OpenGameVerse.App.csproj`: run desktop UI.
+- `dotnet test`: run all tests.
 
 ## Coding Style & Naming Conventions
 
-- Follow existing C# conventions: `PascalCase` for public types/members, `camelCase` for locals/parameters, and clear, descriptive names (e.g., `SteamScanner`, `GameInstallation`).
-- Keep code AOT-safe: no runtime reflection, no dynamic assembly loading, and prefer source generators.
-- Use manual DI wiring (no assembly scanning) and keep platform-specific code behind `IPlatformHost` implementations.
+- C# with nullable reference types enabled and implicit usings.
+- Indentation: 4 spaces; braces on new lines (default C# style).
+- Naming: `PascalCase` for types/methods, `camelCase` for locals/fields.
+- AOT constraints are strict: avoid reflection and runtime scanning; use source generators (JSON, MVVM).
 
 ## Testing Guidelines
 
-- Automated tests are planned for Phase 2; there are no active test projects yet.
-- When adding tests, place them under `tests/` and name classes/files after the component under test (e.g., `SteamScannerTests`).
-- Document how to run new test suites in this file or `README.md` once introduced.
+- Frameworks: xUnit + FluentAssertions + `coverlet.collector`.
+- Test names follow `*Tests.cs` and live under `tests/<Project>.Tests/`.
+- Run targeted tests with `dotnet test tests/OpenGameVerse.Core.Tests/OpenGameVerse.Core.Tests.csproj`.
+- Keep tests AOT-friendly (no reflection-heavy helpers).
 
 ## Commit & Pull Request Guidelines
 
-- This directory does not appear to be a Git repository, so no commit message conventions are available. Use concise, imperative messages until guidelines are added.
-- PRs should include: a short problem statement, key changes, and the exact commands run (for example, `dotnet publish -c Release /p:PublishAot=true`).
-- If a change affects platform behavior, call out Windows/Linux validation explicitly. Include screenshots only for UI changes (Phase 2+).
+- Commit messages in history are short, sentence-case statements (e.g., “Add category management UI…”). Use concise, imperative phrasing; optional scope prefix is acceptable.
+- PRs should include: summary of changes, testing notes (commands + results), and UI screenshots for Avalonia changes.
+- If a change affects AOT behavior, mention the `dotnet publish /p:PublishAot=true` result.
 
-## AOT & Performance Notes
+## Security & Configuration Tips
 
-- Maintain Native AOT constraints from `CLAUDE.md`: source-generated JSON, no reflection, and statically determinable code paths.
-- Prefer streaming results (`IAsyncEnumerable`) for scanners and keep cold start and binary size targets in mind.
+- Local database lives under `~/.config/OpenGameVerse/opengameverse.db` on Linux.
+- IGDB usage transmits only game titles; avoid adding new telemetry without discussion.

@@ -1,336 +1,320 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:OpenGameVerse.App.ViewModels"
-        xmlns:conv="using:OpenGameVerse.App.Converters"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
-        x:Class="OpenGameVerse.App.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="{Binding Title}"
-        Width="1200"
-        Height="800">
-
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:vm="using:OpenGameVerse.App.ViewModels"
+                 xmlns:conv="using:OpenGameVerse.App.Converters"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+                 mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+                 x:Class="OpenGameVerse.App.Views.MainWindow"
+                 x:DataType="vm:MainWindowViewModel"
+                 Icon="/Assets/avalonia-logo.ico"
+                 Title="{Binding Title}"
+                 Width="1200"
+                 Height="800">
     <Design.DataContext>
-        <vm:MainWindowViewModel/>
+        <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <DockPanel>
-        <!-- Toolbar -->
-        <Border DockPanel.Dock="Top"
-                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                Padding="10">
-            <StackPanel Spacing="10">
-                <!-- Top toolbar -->
-                <DockPanel>
-                    <!-- Title and game count -->
-                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="10">
+    <suki:SukiMainHost>
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="16">
+            <Border Grid.Row="0"
+                    CornerRadius="16"
+                    Padding="16">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6">
+                    <StackPanel Grid.Column="0" Spacing="4">
                         <TextBlock Text="OpenGameVerse"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding FilteredGames.Count, StringFormat='({0} games)'}"
-                                   VerticalAlignment="Center"
-                                   Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                   FontSize="22"
+                                   FontWeight="Bold" />
+                        <TextBlock Text="{Binding FilteredGames.Count, StringFormat='({0} games)'}" />
                     </StackPanel>
 
-                    <!-- Action buttons -->
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="5">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Content="Manage Categories"
-                                Command="{Binding ManageCategoriesCommand}"/>
+                                Command="{Binding ManageCategoriesCommand}" />
                         <Button Content="Scan for Games"
                                 Command="{Binding ScanGamesCommand}"
-                                IsEnabled="{Binding !IsScanning}"/>
+                                IsEnabled="{Binding !IsScanning}" />
                         <Button Content="Refresh"
-                                Command="{Binding RefreshCommand}"/>
+                                Command="{Binding RefreshCommand}" />
                         <Button Content="Fullscreen Mode"
                                 Command="{Binding EnterFullscreenCommand}"
-                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
                     </StackPanel>
-                </DockPanel>
+                </Grid>
+            </Border>
 
-                <!-- Search and filter bar -->
-                <DockPanel>
-                    <!-- Search box -->
-                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Border Grid.Row="1"
+                    CornerRadius="16"
+                    Padding="16">
+                <Grid ColumnDefinitions="*,Auto" RowSpacing="12">
+                    <WrapPanel Grid.Column="0" Orientation="Horizontal" ItemSpacing="10" VerticalAlignment="Center">
                         <TextBox Text="{Binding SearchText}"
                                  Watermark="Search games..."
-                                 Width="250"
-                                 VerticalAlignment="Center"/>
+                                 Width="260"
+                                 VerticalAlignment="Center" />
 
                         <ToggleButton IsChecked="{Binding ShowFavoritesOnly}"
                                       Content="Favorites"
-                                      VerticalAlignment="Center"/>
+                                      VerticalAlignment="Center" />
 
                         <ComboBox ItemsSource="{Binding AvailablePlatforms}"
                                   SelectedItem="{Binding SelectedPlatformFilter}"
-                                  Width="150"
-                                  VerticalAlignment="Center"/>
+                                  Width="160"
+                                  VerticalAlignment="Center" />
 
                         <ComboBox ItemsSource="{Binding AvailableCategories}"
                                   SelectedItem="{Binding SelectedCategoryFilter}"
-                                  Width="150"
-                                  VerticalAlignment="Center"/>
+                                  Width="160"
+                                  VerticalAlignment="Center" />
 
                         <Button Content="Clear Filters"
                                 Command="{Binding ClearFiltersCommand}"
-                                VerticalAlignment="Center"/>
-                    </StackPanel>
+                                VerticalAlignment="Center" />
+                    </WrapPanel>
 
-                    <!-- View toggle -->
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <Button Content="Grid View"
                                 Command="{Binding ToggleViewCommand}"
-                                IsVisible="{Binding !IsGridView}"/>
+                                IsVisible="{Binding !IsGridView}" />
                         <Button Content="List View"
                                 Command="{Binding ToggleViewCommand}"
-                                IsVisible="{Binding IsGridView}"/>
+                                IsVisible="{Binding IsGridView}" />
                     </StackPanel>
-                </DockPanel>
-            </StackPanel>
-        </Border>
+                </Grid>
+            </Border>
 
-        <!-- Status bar -->
-        <Border DockPanel.Dock="Bottom"
-                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                Padding="10,5">
-            <DockPanel>
-                <TextBlock Text="{Binding StatusMessage}"
-                           VerticalAlignment="Center"/>
-                <ProgressBar DockPanel.Dock="Right"
-                             Width="100"
-                             Height="4"
-                             IsIndeterminate="True"
-                             IsVisible="{Binding IsScanning}"
-                             Margin="10,0,0,0"/>
-            </DockPanel>
-        </Border>
+            <Grid Grid.Row="2">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding IsGridView}">
+                    <ItemsControl ItemsSource="{Binding FilteredGames}"
+                                  Padding="8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
 
-        <!-- Game grid view -->
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                      VerticalScrollBarVisibility="Auto"
-                      IsVisible="{Binding IsGridView}">
-            <ItemsControl ItemsSource="{Binding FilteredGames}"
-                          Padding="10">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Width="200"
-                                Height="310"
-                                Margin="5"
-                                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-                                CornerRadius="8"
-                                Padding="10"
-                                DoubleTapped="OnGameDoubleTapped"
-                                Cursor="Hand">
-                            <Border.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Launch Game"
-                                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LaunchGameCommand}"
-                                              CommandParameter="{Binding}"/>
-                                    <Separator/>
-                                    <MenuItem Header="Toggle Favorite"
-                                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
-                                              CommandParameter="{Binding}"/>
-                                    <MenuItem Header="Set Category" Name="SetCategoryMenu" SubmenuOpened="OnSetCategoryMenuOpening">
-                                        <MenuItem Header="New Category..."
-                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CreateNewCategoryCommand}"
-                                                  CommandParameter="{Binding}"/>
-                                        <Separator/>
-                                        <MenuItem Header="Uncategorized"
-                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SetCategoryCommand}"
-                                                  CommandParameter="{Binding}"/>
-                                    </MenuItem>
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                            <StackPanel Spacing="8">
-                                <!-- Cover image with favorite icon -->
-                                <Grid>
-                                    <Border Width="180"
-                                            Height="180"
-                                            Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                                            CornerRadius="4"
-                                            ClipToBounds="True">
-                                        <Panel>
-                                            <TextBlock Text="🎮"
-                                                       FontSize="48"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNull}}"/>
-                                            <Image Source="{Binding CoverImagePath, Converter={x:Static conv:FilePathToBitmapConverter.Instance}}"
-                                                   Stretch="Uniform"
-                                                   IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                                        </Panel>
-                                    </Border>
-
-                                    <!-- Favorite icon -->
-                                    <Button Content="{Binding IsFavorite, Converter={StaticResource FavoriteIconConverter}}"
-                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
-                                            CommandParameter="{Binding}"
-                                            HorizontalAlignment="Right"
-                                            VerticalAlignment="Top"
-                                            Margin="5"
-                                            Padding="5"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Cursor="Hand"/>
-                                </Grid>
-
-                                <!-- Game title -->
-                                <TextBlock Text="{Binding Title}"
-                                           FontWeight="SemiBold"
-                                           TextTrimming="CharacterEllipsis"
-                                           TextWrapping="NoWrap"
-                                           MaxLines="1"
-                                           ToolTip.Tip="{Binding Title}"/>
-
-                                <!-- Platform -->
-                                <TextBlock Text="{Binding Platform}"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-
-                                <!-- Category -->
-                                <TextBlock Text="{Binding CustomCategory, TargetNullValue='Uncategorized'}"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-
-                                <!-- Size -->
-                                <TextBlock Text="{Binding SizeDisplay}"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
-
-        <!-- Game list view -->
-        <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                      VerticalScrollBarVisibility="Auto"
-                      IsVisible="{Binding !IsGridView}">
-            <ItemsControl ItemsSource="{Binding FilteredGames}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <StackPanel/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Padding="10"
-                                BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                                BorderThickness="0,1,0,0"
-                                DoubleTapped="OnGameDoubleTapped"
-                                Cursor="Hand">
-                            <Border.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Launch Game"
-                                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LaunchGameCommand}"
-                                              CommandParameter="{Binding}"/>
-                                    <Separator/>
-                                    <MenuItem Header="Toggle Favorite"
-                                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
-                                              CommandParameter="{Binding}"/>
-                                    <MenuItem Header="Set Category" Name="SetCategoryMenu" SubmenuOpened="OnSetCategoryMenuOpening">
-                                        <MenuItem Header="New Category..."
-                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CreateNewCategoryCommand}"
-                                                  CommandParameter="{Binding}"/>
-                                        <Separator/>
-                                        <MenuItem Header="Uncategorized"
-                                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SetCategoryCommand}"
-                                                  CommandParameter="{Binding}"/>
-                                    </MenuItem>
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                            <Grid ColumnDefinitions="50,80,*,120,150,100">
-                                <!-- Favorite -->
-                                <Button Grid.Column="0"
-                                        Content="{Binding IsFavorite, Converter={StaticResource FavoriteIconConverter}}"
-                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
-                                        CommandParameter="{Binding}"
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="210"
+                                        Height="320"
+                                        Margin="8"
                                         Background="Transparent"
-                                        BorderThickness="0"
-                                        Cursor="Hand"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"/>
+                                        BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="14"
+                                        Padding="12"
+                                        DoubleTapped="OnGameDoubleTapped"
+                                        Cursor="Hand">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Launch Game"
+                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LaunchGameCommand}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
+                                            <MenuItem Header="Toggle Favorite"
+                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="Set Category" Name="SetCategoryMenu"
+                                                      SubmenuOpened="OnSetCategoryMenuOpening">
+                                                <MenuItem Header="New Category..."
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CreateNewCategoryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                                <Separator />
+                                                <MenuItem Header="Uncategorized"
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SetCategoryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                            </MenuItem>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
+                                    <StackPanel Spacing="10">
+                                        <Grid>
+                                            <Border Width="186"
+                                                    Height="186"
 
-                                <!-- Cover -->
-                                <Border Grid.Column="1"
-                                        Width="60"
-                                        Height="60"
-                                        Background="{DynamicResource SystemControlBackgroundBaseLowBrush}"
-                                        CornerRadius="4"
-                                        ClipToBounds="True"
-                                        Margin="5">
-                                    <Panel>
-                                        <TextBlock Text="🎮"
-                                                   FontSize="24"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNull}}"/>
-                                        <Image Source="{Binding CoverImagePath, Converter={x:Static conv:FilePathToBitmapConverter.Instance}}"
-                                               Stretch="Uniform"
-                                               IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                                    </Panel>
+                                                    CornerRadius="8"
+                                                    ClipToBounds="True">
+                                                <Panel>
+                                                    <TextBlock Text="🎮"
+                                                               FontSize="52"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNull}}" />
+                                                    <Image
+                                                        Source="{Binding CoverImagePath, Converter={x:Static conv:FilePathToBitmapConverter.Instance}}"
+                                                        Stretch="Uniform"
+                                                        IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                                </Panel>
+                                            </Border>
+
+                                            <Button
+                                                Content="{Binding IsFavorite, Converter={StaticResource FavoriteIconConverter}}"
+                                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
+                                                CommandParameter="{Binding}"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Top"
+                                                Margin="4"
+                                                Padding="6"
+
+                                                BorderThickness="0"
+                                                Cursor="Hand" />
+                                        </Grid>
+
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontWeight="SemiBold"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   MaxLines="1"
+                                                   ToolTip.Tip="{Binding Title}" />
+
+                                        <TextBlock Text="{Binding Platform}"
+                                                   FontSize="11" />
+
+                                        <TextBlock Text="{Binding CustomCategory, TargetNullValue='Uncategorized'}"
+                                                   FontSize="11" />
+
+                                        <TextBlock Text="{Binding SizeDisplay}"
+                                                   FontSize="11" />
+                                    </StackPanel>
                                 </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
 
-                                <!-- Title -->
-                                <TextBlock Grid.Column="2"
-                                           Text="{Binding Title}"
-                                           VerticalAlignment="Center"
-                                           Margin="10,0"
-                                           TextTrimming="CharacterEllipsis"/>
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding !IsGridView}">
+                    <ItemsControl ItemsSource="{Binding FilteredGames}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
 
-                                <!-- Platform -->
-                                <TextBlock Grid.Column="3"
-                                           Text="{Binding Platform}"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="8,4"
+                                        Padding="12"
 
-                                <!-- Category -->
-                                <TextBlock Grid.Column="4"
-                                           Text="{Binding CustomCategory, TargetNullValue='Uncategorized'}"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
+                                        BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="10"
+                                        DoubleTapped="OnGameDoubleTapped"
+                                        Cursor="Hand">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Launch Game"
+                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LaunchGameCommand}"
+                                                      CommandParameter="{Binding}" />
+                                            <Separator />
+                                            <MenuItem Header="Toggle Favorite"
+                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="Set Category" Name="SetCategoryMenu"
+                                                      SubmenuOpened="OnSetCategoryMenuOpening">
+                                                <MenuItem Header="New Category..."
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CreateNewCategoryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                                <Separator />
+                                                <MenuItem Header="Uncategorized"
+                                                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SetCategoryCommand}"
+                                                          CommandParameter="{Binding}" />
+                                            </MenuItem>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
+                                        <Button Grid.Column="0"
+                                                Content="{Binding IsFavorite, Converter={StaticResource FavoriteIconConverter}}"
+                                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
+                                                CommandParameter="{Binding}"
+                                                BorderThickness="0"
+                                                Cursor="Hand"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center" />
 
-                                <!-- Size -->
-                                <TextBlock Grid.Column="5"
-                                           Text="{Binding SizeDisplay}"
-                                           VerticalAlignment="Center"
-                                           Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"/>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                                        <Border Grid.Column="1"
+                                                Width="64"
+                                                Height="64"
 
-        <!-- Empty state -->
-        <StackPanel HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Spacing="20"
-                    IsVisible="{Binding !FilteredGames.Count}">
-            <TextBlock Text="No games found"
-                       FontSize="24"
-                       FontWeight="Light"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="Try adjusting your filters or scan for games"
-                       Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                       HorizontalAlignment="Center"/>
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                <Button Content="Clear Filters"
-                        Command="{Binding ClearFiltersCommand}"/>
-                <Button Content="Scan for Games"
-                        Command="{Binding ScanGamesCommand}"/>
-            </StackPanel>
-        </StackPanel>
-    </DockPanel>
+                                                CornerRadius="8"
+                                                ClipToBounds="True">
+                                            <Panel>
+                                                <TextBlock Text="🎮"
+                                                           FontSize="26"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNull}}" />
+                                                <Image
+                                                    Source="{Binding CoverImagePath, Converter={x:Static conv:FilePathToBitmapConverter.Instance}}"
+                                                    Stretch="Uniform"
+                                                    IsVisible="{Binding CoverImagePath, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                            </Panel>
+                                        </Border>
 
-</Window>
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding Title}"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{Binding Platform}"
+                                                   VerticalAlignment="Center" />
+
+                                        <TextBlock Grid.Column="4"
+                                                   Text="{Binding CustomCategory, TargetNullValue='Uncategorized'}"
+                                                   VerticalAlignment="Center" />
+
+                                        <TextBlock Grid.Column="5"
+                                                   Text="{Binding SizeDisplay}"
+                                                   VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <Border HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        CornerRadius="16"
+                        Padding="24"
+
+                        IsVisible="{Binding !FilteredGames.Count}">
+                    <StackPanel Spacing="16" HorizontalAlignment="Center">
+                        <TextBlock Text="No games found"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="Try adjusting your filters or scan for games"
+
+                                   HorizontalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                            <Button Content="Clear Filters"
+                                    Command="{Binding ClearFiltersCommand}" />
+                            <Button Content="Scan for Games"
+                                    Command="{Binding ScanGamesCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="3"
+                    CornerRadius="14"
+                    Padding="12,8">
+                <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusMessage}"
+                               VerticalAlignment="Center" />
+                    <ProgressBar Grid.Column="1"
+                                 Width="120"
+                                 Height="4"
+                                 IsIndeterminate="True"
+                                 IsVisible="{Binding IsScanning}"
+                                 Margin="10,0,0,0" />
+                </Grid>
+            </Border>
+        </Grid>
+    </suki:SukiMainHost>
+</suki:SukiWindow>

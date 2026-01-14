@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using OpenGameVerse.App.ViewModels;
 using OpenGameVerse.App.Views;
 using OpenGameVerse.App.Services;
@@ -9,6 +10,7 @@ using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
 using OpenGameVerse.Metadata.Abstractions;
 using OpenGameVerse.Metadata.Services;
+using SukiUI;
 
 #if WINDOWS
 using OpenGameVerse.Platform.Windows;

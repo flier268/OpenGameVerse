@@ -37,6 +37,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="SukiUI" Version="6.0.3" />
   </ItemGroup>
 
   <ItemGroup>

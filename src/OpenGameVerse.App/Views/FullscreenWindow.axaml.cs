@@ -6,10 +6,11 @@ using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using OpenGameVerse.App.ViewModels;
+using SukiUI.Controls;
 
 namespace OpenGameVerse.App.Views;
 
-public partial class FullscreenWindow : Window
+public partial class FullscreenWindow : SukiWindow
 {
     private FullscreenViewModel? _viewModel;
     private bool _initialFocusSet;

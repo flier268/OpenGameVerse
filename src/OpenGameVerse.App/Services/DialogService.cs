@@ -49,7 +49,7 @@ public sealed class DialogService : IDialogService
         {
             DataContext = categoryVm
         };
-
+        managerWindow.SetOwner(_mainWindow);
         await managerWindow.ShowDialog(_mainWindow);
     }
 }
