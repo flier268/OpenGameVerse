@@ -17,6 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPlatformHost _platformHost;
     private readonly IMetadataService? _metadataService;
     private readonly IDialogService _dialogService;
+    private readonly IAppSettingsService _settingsService;
 
     [ObservableProperty]
     public partial string Title { get; set; } = "OpenGameVerse - Game Library";
@@ -60,13 +61,14 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<string> CategoriesForAssignment { get; set; } = new();
 
-    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IMetadataService? metadataService = null)
+    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IAppSettingsService settingsService, IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
         _categoryRepository = categoryRepository;
         _platformHost = platformHost;
         _metadataService = metadataService;
         _dialogService = dialogService;
+        _settingsService = settingsService;
 
         // Wire up property changed events for filtering
         PropertyChanged += (_, e) =>
@@ -77,6 +79,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 ApplyFilters();
             }
         };
+    }
+
+    [RelayCommand]
+    private async Task OpenSettingsAsync()
+    {
+        await _dialogService.ShowSettingsAsync(_settingsService);
     }
 
     public async Task InitializeAsync()

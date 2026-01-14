@@ -12,6 +12,7 @@ public interface IDialogService
 {
     Task<string?> ShowCategoryInputDialogAsync();
     Task ShowCategoryManagerAsync(IGameRepository gameRepository, ICategoryRepository categoryRepository);
+    Task ShowSettingsAsync(IAppSettingsService settingsService);
 }
 
 public sealed class DialogService : IDialogService
@@ -51,5 +52,21 @@ public sealed class DialogService : IDialogService
         };
         managerWindow.SetOwner(_mainWindow);
         await managerWindow.ShowDialog(_mainWindow);
+    }
+
+    public async Task ShowSettingsAsync(IAppSettingsService settingsService)
+    {
+        if (_mainWindow == null)
+        {
+            return;
+        }
+
+        var settingsVm = new SettingsViewModel(settingsService);
+        var settingsWindow = new SettingsWindow
+        {
+            DataContext = settingsVm
+        };
+
+        await settingsWindow.ShowDialog(_mainWindow);
     }
 }

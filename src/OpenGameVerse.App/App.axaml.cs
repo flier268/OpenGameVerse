@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Styling;
 using OpenGameVerse.App.ViewModels;
 using OpenGameVerse.App.Views;
 using OpenGameVerse.App.Services;
@@ -10,7 +9,6 @@ using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
 using OpenGameVerse.Metadata.Abstractions;
 using OpenGameVerse.Metadata.Services;
-using SukiUI;
 
 #if WINDOWS
 using OpenGameVerse.Platform.Windows;
@@ -27,6 +25,7 @@ public partial class App : Application
     private IPlatformHost? _platformHost;
     private IMetadataService? _metadataService;
     private DialogService? _dialogService;
+    private IAppSettingsService? _settingsService;
 
     public override void Initialize()
     {
@@ -76,6 +75,15 @@ public partial class App : Application
 
         // Dialog service
         _dialogService = new DialogService();
+
+        // App settings
+        var settingsPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "OpenGameVerse", "settings.json");
+
+        _settingsService = new AppSettingsService(settingsPath);
+        _settingsService.Load();
+        _settingsService.ApplyThemeFromSettings();
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -87,7 +95,13 @@ public partial class App : Application
             // Set dialog service's main window
             _dialogService?.SetMainWindow(mainWindow);
 
-            var viewModel = new MainWindowViewModel(_gameRepository!, _categoryRepository!, _platformHost!, _dialogService!, _metadataService);
+            var viewModel = new MainWindowViewModel(
+                _gameRepository!,
+                _categoryRepository!,
+                _platformHost!,
+                _dialogService!,
+                _settingsService!,
+                _metadataService);
 
             mainWindow.DataContext = viewModel;
             desktop.MainWindow = mainWindow;

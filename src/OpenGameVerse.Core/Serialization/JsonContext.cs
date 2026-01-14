@@ -22,6 +22,7 @@ namespace OpenGameVerse.Core.Serialization;
 [JsonSerializable(typeof(List<Library>))]
 [JsonSerializable(typeof(List<Platform>))]
 [JsonSerializable(typeof(List<GameInstallation>))]
+[JsonSerializable(typeof(AppSettings))]
 [JsonSerializable(typeof(Dictionary<string, string>))] // For VDF/Epic manifests
 [JsonSerializable(typeof(Dictionary<string, object>))] // For nested JSON
 public partial class OpenGameVerseJsonContext : JsonSerializerContext

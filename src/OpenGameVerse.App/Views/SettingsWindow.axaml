@@ -1,0 +1,46 @@
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:vm="using:OpenGameVerse.App.ViewModels"
+                 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+                 x:Class="OpenGameVerse.App.Views.SettingsWindow"
+                 x:DataType="vm:SettingsViewModel"
+                 Title="Settings"
+                 Width="420"
+                 Height="260"
+                 WindowStartupLocation="CenterOwner"
+                 CanResize="False">
+    <Design.DataContext>
+        <vm:SettingsViewModel />
+    </Design.DataContext>
+
+    <suki:SukiMainHost>
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16" Margin="20">
+            <Border Grid.Row="0" CornerRadius="14" Padding="12">
+                <TextBlock Text="Appearance"
+                           FontSize="16"
+                           FontWeight="SemiBold" />
+            </Border>
+
+            <Border Grid.Row="1" CornerRadius="12" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Theme"
+                               FontWeight="SemiBold" />
+                    <CheckBox Content="Use dark theme"
+                              IsChecked="{Binding IsDarkTheme}" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2" CornerRadius="12" Padding="12">
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="8">
+                    <Button Content="Apply"
+                            Command="{Binding ApplyCommand}" />
+                    <Button Content="Close"
+                            Command="{Binding CloseCommand}"
+                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </suki:SukiMainHost>
+</suki:SukiWindow>
