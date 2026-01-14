@@ -64,7 +64,8 @@ public sealed class DatabaseContext
         {
             (version: 1, script: "OpenGameVerse.Data.Migrations.InitialSchema.sql"),
             (version: 2, script: "OpenGameVerse.Data.Migrations.002_AddUserOrganization.sql"),
-            (version: 3, script: "OpenGameVerse.Data.Migrations.003_AddCategoriesTable.sql")
+            (version: 3, script: "OpenGameVerse.Data.Migrations.003_AddCategoriesTable.sql"),
+            (version: 4, script: "OpenGameVerse.Data.Migrations.004_AddPlatformId.sql")
         };
 
         var assembly = Assembly.GetExecutingAssembly();

@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace OpenGameVerse.App.Services;
@@ -26,6 +27,7 @@ public sealed class StartupService : IStartupService
         }
     }
 
+    [SupportedOSPlatform("windows")]
     private static void SetWindowsStartup(bool enable)
     {
         var exePath = Environment.ProcessPath;

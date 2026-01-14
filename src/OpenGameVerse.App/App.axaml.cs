@@ -29,6 +29,7 @@ public partial class App : Application
     private IAppSettingsService? _settingsService;
     private TrayIconService? _trayIconService;
     private WindowBehaviorService? _windowBehaviorService;
+    private GameStatusMonitorService? _gameStatusMonitorService;
 
     public override void Initialize()
     {
@@ -99,12 +100,16 @@ public partial class App : Application
             // Set dialog service's main window
             _dialogService?.SetMainWindow(mainWindow);
 
+            _gameStatusMonitorService = new GameStatusMonitorService();
+            _gameStatusMonitorService.Start();
+
             var viewModel = new MainWindowViewModel(
                 _gameRepository!,
                 _categoryRepository!,
                 _platformHost!,
                 _dialogService!,
                 _settingsService!,
+                _gameStatusMonitorService,
                 _metadataService);
 
             mainWindow.DataContext = viewModel;
@@ -138,6 +143,7 @@ public partial class App : Application
                 _platformHost!,
                 mainWindow,
                 _settingsService!,
+                _gameStatusMonitorService!,
                 _metadataService);
 
             var fullscreenWindow = new FullscreenWindow

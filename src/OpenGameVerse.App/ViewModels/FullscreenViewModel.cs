@@ -18,6 +18,7 @@ public partial class FullscreenViewModel : ViewModelBase
     private readonly IMetadataService? _metadataService;
     private readonly Window _parentWindow;
     private readonly IAppSettingsService _settingsService;
+    private readonly GameStatusMonitorService _gameStatusMonitor;
 
     [ObservableProperty]
     public partial ObservableCollection<GameViewModel> Games { get; set; } = new();
@@ -36,12 +37,14 @@ public partial class FullscreenViewModel : ViewModelBase
         IPlatformHost platformHost,
         Window parentWindow,
         IAppSettingsService settingsService,
+        GameStatusMonitorService gameStatusMonitor,
         IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
         _platformHost = platformHost;
         _parentWindow = parentWindow;
         _settingsService = settingsService;
+        _gameStatusMonitor = gameStatusMonitor;
         _metadataService = metadataService;
     }
 
@@ -77,6 +80,8 @@ public partial class FullscreenViewModel : ViewModelBase
             }
 
             StatusMessage = $"Loaded {Games.Count} games - Ready to play!";
+
+            _gameStatusMonitor.UpdateTrackedGames(Games);
         }
         catch (Exception ex)
         {
@@ -120,6 +125,12 @@ public partial class FullscreenViewModel : ViewModelBase
                     if (existingResult.IsSuccess && existingResult.Value != null)
                     {
                         var existingGame = existingResult.Value;
+                        if (!string.IsNullOrWhiteSpace(gameInstallation.PlatformId)
+                            && string.IsNullOrWhiteSpace(existingGame.PlatformId))
+                        {
+                            existingGame.PlatformId = gameInstallation.PlatformId;
+                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                        }
                         if (!string.IsNullOrWhiteSpace(gameInstallation.CoverImagePath))
                         {
                             var needsCover = string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
@@ -162,6 +173,7 @@ public partial class FullscreenViewModel : ViewModelBase
                         NormalizedTitle = gameInstallation.Title.ToLowerInvariant(),
                         InstallPath = gameInstallation.InstallPath,
                         Platform = gameInstallation.Platform,
+                        PlatformId = gameInstallation.PlatformId,
                         ExecutablePath = gameInstallation.ExecutablePath,
                         IconPath = gameInstallation.IconPath,
                         CoverImagePath = gameInstallation.CoverImagePath,
@@ -189,6 +201,8 @@ public partial class FullscreenViewModel : ViewModelBase
 
             StatusMessage = $"Scan complete: Found {gamesFound}, added {gamesAdded} new games";
             TotalGames = Games.Count;
+
+            _gameStatusMonitor.UpdateTrackedGames(Games);
         }
         catch (Exception ex)
         {
@@ -283,6 +297,10 @@ public partial class FullscreenViewModel : ViewModelBase
                         Dispatcher.UIThread.Post(() => RestoreWindow(fullscreenWindow));
                     };
                 }
+                else
+                {
+                    _ = MonitorGameExitAsync(game.Id, fullscreenWindow, didChangeWindow, settings.GameCloseAction);
+                }
 
                 // Update last played
                 game.LastPlayed = DateTime.UtcNow;
@@ -348,6 +366,29 @@ public partial class FullscreenViewModel : ViewModelBase
         window.Show();
         window.WindowState = WindowState.Normal;
         window.Activate();
+    }
+
+    private async Task MonitorGameExitAsync(long gameId, Window? window, bool didChangeWindow, GameCloseAction closeAction)
+    {
+        if (closeAction == GameCloseAction.KeepMinimized)
+        {
+            return;
+        }
+
+        if (closeAction == GameCloseAction.RestoreWhenLaunchedFromUi && !didChangeWindow)
+        {
+            return;
+        }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromHours(6));
+        try
+        {
+            await _gameStatusMonitor.WaitForGameExitAsync(gameId, cts.Token);
+            Dispatcher.UIThread.Post(() => RestoreWindow(window));
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private async Task EnrichGameMetadataAsync(Game game, GameViewModel gameVm)

@@ -47,6 +47,7 @@ public sealed class AppSettingsService : IAppSettingsService
             if (settings != null)
             {
                 CurrentSettings = settings;
+                _startupService?.SetStartOnStartup(CurrentSettings.StartOnStartup);
                 return;
             }
         }
@@ -55,6 +56,7 @@ public sealed class AppSettingsService : IAppSettingsService
             if (TryLoadLegacySettings(out var legacySettings))
             {
                 CurrentSettings = legacySettings;
+                _startupService?.SetStartOnStartup(CurrentSettings.StartOnStartup);
                 return;
             }
 

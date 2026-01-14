@@ -24,7 +24,16 @@ public partial class GameViewModel : ViewModelBase
     public partial string? CoverImagePath { get; set; }
 
     [ObservableProperty]
+    public partial string? ExecutablePath { get; set; }
+
+    [ObservableProperty]
+    public partial string? PlatformId { get; set; }
+
+    [ObservableProperty]
     public partial long SizeBytes { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsRunning { get; set; }
 
     [ObservableProperty]
     public partial bool IsFavorite { get; set; }
@@ -48,6 +57,8 @@ public partial class GameViewModel : ViewModelBase
             Platform = game.Platform,
             InstallPath = game.InstallPath,
             CoverImagePath = game.CoverImagePath,
+            ExecutablePath = game.ExecutablePath,
+            PlatformId = game.PlatformId,
             SizeBytes = game.SizeBytes,
             IsFavorite = game.IsFavorite,
             CustomCategory = game.CustomCategory,

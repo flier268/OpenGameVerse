@@ -20,6 +20,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IMetadataService? _metadataService;
     private readonly IDialogService _dialogService;
     private readonly IAppSettingsService _settingsService;
+    private readonly GameStatusMonitorService _gameStatusMonitor;
 
     [ObservableProperty]
     public partial string Title { get; set; } = "OpenGameVerse - Game Library";
@@ -63,7 +64,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<string> CategoriesForAssignment { get; set; } = new();
 
-    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IAppSettingsService settingsService, IMetadataService? metadataService = null)
+    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IAppSettingsService settingsService, GameStatusMonitorService gameStatusMonitor, IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
         _categoryRepository = categoryRepository;
@@ -71,6 +72,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _metadataService = metadataService;
         _dialogService = dialogService;
         _settingsService = settingsService;
+        _gameStatusMonitor = gameStatusMonitor;
 
         // Wire up property changed events for filtering
         PropertyChanged += (_, e) =>
@@ -127,6 +129,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // Apply initial filter
             ApplyFilters();
+
+            _gameStatusMonitor.UpdateTrackedGames(Games);
         }
         catch (Exception ex)
         {
@@ -170,6 +174,12 @@ public partial class MainWindowViewModel : ViewModelBase
                     if (existingResult.IsSuccess && existingResult.Value != null)
                     {
                         var existingGame = existingResult.Value;
+                        if (!string.IsNullOrWhiteSpace(gameInstallation.PlatformId)
+                            && string.IsNullOrWhiteSpace(existingGame.PlatformId))
+                        {
+                            existingGame.PlatformId = gameInstallation.PlatformId;
+                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                        }
                         if (!string.IsNullOrWhiteSpace(gameInstallation.CoverImagePath))
                         {
                             var needsCover = string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
@@ -212,6 +222,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         NormalizedTitle = gameInstallation.Title.ToLowerInvariant(),
                         InstallPath = gameInstallation.InstallPath,
                         Platform = gameInstallation.Platform,
+                        PlatformId = gameInstallation.PlatformId,
                         ExecutablePath = gameInstallation.ExecutablePath,
                         IconPath = gameInstallation.IconPath,
                         CoverImagePath = gameInstallation.CoverImagePath,
@@ -243,6 +254,8 @@ public partial class MainWindowViewModel : ViewModelBase
             // Refresh filters so newly added games appear in the visible list
             await UpdateFiltersAsync();
             ApplyFilters();
+
+            _gameStatusMonitor.UpdateTrackedGames(Games);
         }
         catch (Exception ex)
         {
@@ -273,6 +286,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _platformHost,
             parentWindow,
             _settingsService,
+            _gameStatusMonitor,
             _metadataService);
         var fullscreenWindow = new FullscreenWindow
         {
@@ -385,6 +399,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
                         Dispatcher.UIThread.Post(() => RestoreWindow(mainWindow));
                     };
+                }
+                else
+                {
+                    _ = MonitorGameExitAsync(game.Id, mainWindow, didChangeWindow, settings.GameCloseAction);
                 }
 
                 // Update last played
@@ -580,6 +598,29 @@ public partial class MainWindowViewModel : ViewModelBase
         window.Show();
         window.WindowState = WindowState.Normal;
         window.Activate();
+    }
+
+    private async Task MonitorGameExitAsync(long gameId, Window? window, bool didChangeWindow, GameCloseAction closeAction)
+    {
+        if (closeAction == GameCloseAction.KeepMinimized)
+        {
+            return;
+        }
+
+        if (closeAction == GameCloseAction.RestoreWhenLaunchedFromUi && !didChangeWindow)
+        {
+            return;
+        }
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromHours(6));
+        try
+        {
+            await _gameStatusMonitor.WaitForGameExitAsync(gameId, cts.Token);
+            Dispatcher.UIThread.Post(() => RestoreWindow(window));
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     [RelayCommand]

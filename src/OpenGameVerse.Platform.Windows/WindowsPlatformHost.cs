@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Common;
 using OpenGameVerse.Core.Models;
@@ -8,6 +9,7 @@ namespace OpenGameVerse.Platform.Windows;
 /// <summary>
 /// Windows platform host implementation
 /// </summary>
+[SupportedOSPlatform("windows")]
 public sealed class WindowsPlatformHost : IPlatformHost
 {
     public PlatformType Platform => PlatformType.Windows;

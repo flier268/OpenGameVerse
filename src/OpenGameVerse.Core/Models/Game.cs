@@ -10,6 +10,7 @@ public sealed class Game
     public string? NormalizedTitle { get; set; }
     public required string InstallPath { get; set; }
     public required string Platform { get; set; } // Steam, Epic, GOG, etc.
+    public string? PlatformId { get; set; }
     public string? ExecutablePath { get; set; }
     public string? IconPath { get; set; }
     public long SizeBytes { get; set; }

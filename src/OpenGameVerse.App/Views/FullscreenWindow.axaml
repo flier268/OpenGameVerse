@@ -149,6 +149,14 @@
                                                            HorizontalAlignment="Center"
                                                            TextAlignment="Center" />
 
+                                                <TextBlock Text="執行中"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource ThemeAccentBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           Margin="0,6,0,0"
+                                                           IsVisible="{Binding IsRunning}" />
+
                                                 <StackPanel Orientation="Horizontal"
                                                             HorizontalAlignment="Center"
                                                             Margin="0,8,0,0"

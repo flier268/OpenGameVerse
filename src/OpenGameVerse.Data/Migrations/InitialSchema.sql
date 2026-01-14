@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS games (
     normalized_title TEXT NOT NULL,
     install_path TEXT NOT NULL UNIQUE,
     platform TEXT NOT NULL,
+    platform_id TEXT,
     executable_path TEXT,
     icon_path TEXT,
     size_bytes INTEGER NOT NULL DEFAULT 0,
