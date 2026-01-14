@@ -1,11 +1,13 @@
 using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Metadata.Abstractions;
+using OpenGameVerse.App.Services;
 
 namespace OpenGameVerse.App.ViewModels;
 
@@ -15,6 +17,7 @@ public partial class FullscreenViewModel : ViewModelBase
     private readonly IPlatformHost _platformHost;
     private readonly IMetadataService? _metadataService;
     private readonly Window _parentWindow;
+    private readonly IAppSettingsService _settingsService;
 
     [ObservableProperty]
     public partial ObservableCollection<GameViewModel> Games { get; set; } = new();
@@ -32,11 +35,13 @@ public partial class FullscreenViewModel : ViewModelBase
         IGameRepository gameRepository,
         IPlatformHost platformHost,
         Window parentWindow,
+        IAppSettingsService settingsService,
         IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
         _platformHost = platformHost;
         _parentWindow = parentWindow;
+        _settingsService = settingsService;
         _metadataService = metadataService;
     }
 
@@ -65,7 +70,7 @@ public partial class FullscreenViewModel : ViewModelBase
                 Games.Add(gameVm);
 
                 // Enrich with metadata if available (fire and forget)
-                if (_metadataService != null)
+                if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
                 {
                     _ = EnrichGameMetadataAsync(game, gameVm);
                 }
@@ -133,6 +138,20 @@ public partial class FullscreenViewModel : ViewModelBase
                             }
                         }
 
+                        if (_settingsService.CurrentSettings.UpdateInstallSizeOnLibraryUpdate
+                            && existingGame.SizeBytes != gameInstallation.SizeBytes)
+                        {
+                            existingGame.SizeBytes = gameInstallation.SizeBytes;
+                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+
+                            var existingVm = Games.FirstOrDefault(vm =>
+                                string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                            if (existingVm != null)
+                            {
+                                existingVm.SizeBytes = gameInstallation.SizeBytes;
+                            }
+                        }
+
                         continue; // Already in library
                     }
 
@@ -160,7 +179,7 @@ public partial class FullscreenViewModel : ViewModelBase
                         var gameVm = GameViewModel.FromModel(game);
                         Games.Add(gameVm);
 
-                        if (_metadataService != null)
+                        if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
                         {
                             _ = EnrichGameMetadataAsync(game, gameVm);
                         }
@@ -240,6 +259,31 @@ public partial class FullscreenViewModel : ViewModelBase
 
             if (launchResult.IsSuccess)
             {
+                var settings = _settingsService.CurrentSettings;
+                var fullscreenWindow = GetFullscreenWindow();
+                var didChangeWindow = ApplyLaunchAction(fullscreenWindow, settings.GameLaunchAction);
+
+                var process = launchResult.Value;
+                if (process != null)
+                {
+                    process.EnableRaisingEvents = true;
+                    process.Exited += (_, _) =>
+                    {
+                        process.Dispose();
+                        if (settings.GameCloseAction == GameCloseAction.KeepMinimized)
+                        {
+                            return;
+                        }
+
+                        if (settings.GameCloseAction == GameCloseAction.RestoreWhenLaunchedFromUi && !didChangeWindow)
+                        {
+                            return;
+                        }
+
+                        Dispatcher.UIThread.Post(() => RestoreWindow(fullscreenWindow));
+                    };
+                }
+
                 // Update last played
                 game.LastPlayed = DateTime.UtcNow;
                 await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
@@ -255,6 +299,55 @@ public partial class FullscreenViewModel : ViewModelBase
         {
             StatusMessage = $"Launch error: {ex.Message}";
         }
+    }
+
+    private static Window? GetFullscreenWindow()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            foreach (var window in desktop.Windows)
+            {
+                if (window is Views.FullscreenWindow)
+                {
+                    return window;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static bool ApplyLaunchAction(Window? window, GameLaunchAction action)
+    {
+        if (window == null)
+        {
+            return false;
+        }
+
+        switch (action)
+        {
+            case GameLaunchAction.Minimize:
+                window.WindowState = WindowState.Minimized;
+                return true;
+            case GameLaunchAction.Hide:
+                window.Hide();
+                return true;
+            case GameLaunchAction.NoChange:
+            default:
+                return false;
+        }
+    }
+
+    private static void RestoreWindow(Window? window)
+    {
+        if (window == null)
+        {
+            return;
+        }
+
+        window.Show();
+        window.WindowState = WindowState.Normal;
+        window.Activate();
     }
 
     private async Task EnrichGameMetadataAsync(Game game, GameViewModel gameVm)

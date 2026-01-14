@@ -4,39 +4,157 @@
                  xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
                  x:Class="OpenGameVerse.App.Views.SettingsWindow"
                  x:DataType="vm:SettingsViewModel"
-                 Title="Settings"
-                 Width="420"
-                 Height="260"
+                 Title="設定"
+                 Width="700"
+                 Height="720"
                  WindowStartupLocation="CenterOwner"
-                 CanResize="False">
+                 CanResize="True">
     <Design.DataContext>
         <vm:SettingsViewModel />
     </Design.DataContext>
 
     <suki:SukiMainHost>
-        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16" Margin="20">
-            <Border Grid.Row="0" CornerRadius="14" Padding="12">
-                <TextBlock Text="Appearance"
-                           FontSize="16"
-                           FontWeight="SemiBold" />
-            </Border>
+        <Grid RowDefinitions="*,Auto" RowSpacing="16" Margin="20">
+            <TabControl Grid.Row="0">
+                <TabItem Header="一般">
+                    <ScrollViewer>
+                        <StackPanel Spacing="16" Margin="0,4,0,4">
+                            <Border CornerRadius="12" Padding="12">
+                                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                    <TextBlock Grid.Row="0" Grid.Column="0"
+                                               Text="變更語言"
+                                               VerticalAlignment="Center" />
+                                    <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                                        <ComboBox Width="260"
+                                                  ItemsSource="{Binding LanguageOptions}"
+                                                  SelectedItem="{Binding SelectedLanguageOption}"
+                                                  IsEnabled="False">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Label}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <Button Content="協助我們翻譯 OpenGameVerse"
+                                                IsEnabled="False" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0"
+                                               Text="當遊戲啟動時"
+                                               VerticalAlignment="Center" />
+                                    <ComboBox Grid.Row="1" Grid.Column="1"
+                                              Width="280" HorizontalAlignment="Left"
+                                              ItemsSource="{Binding GameLaunchActionOptions}"
+                                              SelectedItem="{Binding SelectedGameLaunchActionOption}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0"
+                                               Text="當遊戲關閉時"
+                                               VerticalAlignment="Center" />
+                                    <ComboBox Grid.Row="2" Grid.Column="1"
+                                              Width="280" HorizontalAlignment="Left"
+                                              ItemsSource="{Binding GameCloseActionOptions}"
+                                              SelectedItem="{Binding SelectedGameCloseActionOption}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Label}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </Grid>
+                            </Border>
+
+                            <Border CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <CheckBox Content="顯示系統列圖示"
+                                                  IsChecked="{Binding ShowTrayIcon}" />
+                                        <ComboBox Width="160"
+                                                  ItemsSource="{Binding TrayIconStyleOptions}"
+                                                  SelectedItem="{Binding SelectedTrayIconStyleOption}"
+                                                  IsEnabled="{Binding ShowTrayIcon}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Label}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    <CheckBox Content="最小化時縮小至系統列"
+                                              Margin="24,0,0,0"
+                                              IsChecked="{Binding MinimizeToTrayOnMinimize}"
+                                              IsEnabled="{Binding ShowTrayIcon}" />
+                                    <CheckBox Content="關閉 OpenGameVerse 時將視窗縮小至系統列"
+                                              Margin="24,0,0,0"
+                                              IsChecked="{Binding MinimizeToTrayOnClose}"
+                                              IsEnabled="{Binding ShowTrayIcon}" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="10">
+                                    <CheckBox Content="匯入遊戲後下載元資料"
+                                              IsChecked="{Binding DownloadMetadataAfterImport}" />
+                                    <CheckBox Content="以全螢幕模式啟動"
+                                              IsChecked="{Binding StartInFullscreen}" />
+                                    <CheckBox Content="開機時自動啟動 OpenGameVerse"
+                                              IsChecked="{Binding StartOnStartup}" />
+                                    <CheckBox Content="啟動後縮小至工具列"
+                                              Margin="24,0,0,0"
+                                              IsChecked="{Binding MinimizeToTrayAfterStartup}"
+                                              IsEnabled="{Binding StartOnStartup}" />
+                                    <CheckBox Content="以最小化狀態啟動 OpenGameVerse"
+                                              IsChecked="{Binding StartMinimized}" />
+                                    <CheckBox Content="更新資料庫時同步更新遊戲安裝容量"
+                                              IsChecked="{Binding UpdateInstallSizeOnLibraryUpdate}" />
+                                    <CheckBox Content="在遊戲名稱過濾器中使用模糊比對"
+                                              IsChecked="{Binding UseFuzzyMatchingInFilter}" />
+                                    <StackPanel>
+                                        <TextBlock Text="匯入資料庫中的遊玩時間:"
+                                                   Margin="0,2,0,6" />
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <ComboBox Width="220"
+                                                      ItemsSource="{Binding PlaytimeImportModeOptions}"
+                                                      SelectedItem="{Binding SelectedPlaytimeImportModeOption}">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <TextBlock Text="{Binding Label}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <Button Content="說明" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <TabItem Header="外觀">
+                    <Border CornerRadius="12" Padding="12" Margin="0,4,0,4">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="主題"
+                                       FontWeight="SemiBold" />
+                            <CheckBox Content="使用深色主題"
+                                      IsChecked="{Binding IsDarkTheme}" />
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
 
             <Border Grid.Row="1" CornerRadius="12" Padding="12">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Theme"
-                               FontWeight="SemiBold" />
-                    <CheckBox Content="Use dark theme"
-                              IsChecked="{Binding IsDarkTheme}" />
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Row="2" CornerRadius="12" Padding="12">
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             Spacing="8">
-                    <Button Content="Apply"
+                    <Button Content="套用"
                             Command="{Binding ApplyCommand}" />
-                    <Button Content="Close"
+                    <Button Content="關閉"
                             Command="{Binding CloseCommand}"
                             CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
                 </StackPanel>

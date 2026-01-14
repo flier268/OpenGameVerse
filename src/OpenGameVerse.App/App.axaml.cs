@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using OpenGameVerse.App.ViewModels;
@@ -26,6 +27,8 @@ public partial class App : Application
     private IMetadataService? _metadataService;
     private DialogService? _dialogService;
     private IAppSettingsService? _settingsService;
+    private TrayIconService? _trayIconService;
+    private WindowBehaviorService? _windowBehaviorService;
 
     public override void Initialize()
     {
@@ -81,7 +84,8 @@ public partial class App : Application
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "OpenGameVerse", "settings.json");
 
-        _settingsService = new AppSettingsService(settingsPath);
+        var startupService = new StartupService();
+        _settingsService = new AppSettingsService(settingsPath, startupService);
         _settingsService.Load();
         _settingsService.ApplyThemeFromSettings();
     }
@@ -106,10 +110,58 @@ public partial class App : Application
             mainWindow.DataContext = viewModel;
             desktop.MainWindow = mainWindow;
 
+            _trayIconService = new TrayIconService(
+                mainWindow,
+                () => _windowBehaviorService?.RequestExit());
+            _trayIconService.UpdateSettings(_settingsService!.CurrentSettings);
+
+            _windowBehaviorService = new WindowBehaviorService(
+                mainWindow,
+                _settingsService!,
+                _trayIconService);
+
             // Initialize after window is created
             _ = viewModel.InitializeAsync();
+
+            ApplyStartupWindowBehavior(mainWindow, _settingsService.CurrentSettings);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void ApplyStartupWindowBehavior(Window mainWindow, OpenGameVerse.Core.Models.AppSettings settings)
+    {
+        if (settings.StartInFullscreen)
+        {
+            var fullscreenViewModel = new FullscreenViewModel(
+                _gameRepository!,
+                _platformHost!,
+                mainWindow,
+                _settingsService!,
+                _metadataService);
+
+            var fullscreenWindow = new FullscreenWindow
+            {
+                DataContext = fullscreenViewModel
+            };
+
+            fullscreenWindow.Closed += (_, _) => mainWindow.Show();
+            mainWindow.Hide();
+            fullscreenWindow.Show();
+            _ = fullscreenViewModel.InitializeAsync();
+            return;
+        }
+
+        if (settings.StartOnStartup && settings.MinimizeToTrayAfterStartup && settings.ShowTrayIcon)
+        {
+            mainWindow.WindowState = WindowState.Minimized;
+            mainWindow.Hide();
+            return;
+        }
+
+        if (settings.StartMinimized)
+        {
+            mainWindow.WindowState = WindowState.Minimized;
+        }
     }
 }

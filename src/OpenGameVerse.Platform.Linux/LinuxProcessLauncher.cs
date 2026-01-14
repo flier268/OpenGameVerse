@@ -11,7 +11,7 @@ namespace OpenGameVerse.Platform.Linux;
 [SupportedOSPlatform("linux")]
 public sealed class LinuxProcessLauncher : IProcessLauncher
 {
-    public async Task<Result> LaunchAsync(
+    public async Task<Result<Process?>> LaunchAsync(
         string target,
         string? arguments = null,
         Dictionary<string, string>? environmentVariables = null,
@@ -19,7 +19,7 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
     {
         if (string.IsNullOrWhiteSpace(target))
         {
-            return Result.Failure("Target path or URL cannot be empty");
+            return Result<Process?>.Failure("Target path or URL cannot be empty");
         }
 
         try
@@ -35,7 +35,7 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
         }
         catch (Exception ex)
         {
-            return Result.Failure($"Failed to launch process: {ex.Message}");
+            return Result<Process?>.Failure($"Failed to launch process: {ex.Message}");
         }
     }
 
@@ -44,7 +44,7 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
         return target.Contains("://", StringComparison.Ordinal);
     }
 
-    private async Task<Result> LaunchProtocolUrlAsync(string url, CancellationToken ct)
+    private async Task<Result<Process?>> LaunchProtocolUrlAsync(string url, CancellationToken ct)
     {
         try
         {
@@ -63,7 +63,7 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
 
             if (process == null)
             {
-                return Result.Failure("Failed to start xdg-open process");
+                return Result<Process?>.Failure("Failed to start xdg-open process");
             }
 
             // Wait briefly to check if the process started successfully
@@ -72,18 +72,18 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
             if (process.HasExited && process.ExitCode != 0)
             {
                 var error = await process.StandardError.ReadToEndAsync(ct);
-                return Result.Failure($"xdg-open failed: {error}");
+                return Result<Process?>.Failure($"xdg-open failed: {error}");
             }
 
-            return Result.Success();
+            return Result<Process?>.Success(null);
         }
         catch (Exception ex)
         {
-            return Result.Failure($"Failed to launch protocol URL: {ex.Message}");
+            return Result<Process?>.Failure($"Failed to launch protocol URL: {ex.Message}");
         }
     }
 
-    private async Task<Result> LaunchExecutableAsync(
+    private async Task<Result<Process?>> LaunchExecutableAsync(
         string executablePath,
         string? arguments,
         Dictionary<string, string>? environmentVariables,
@@ -93,7 +93,7 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
         {
             if (!File.Exists(executablePath))
             {
-                return Result.Failure($"Executable not found: {executablePath}");
+                return Result<Process?>.Failure($"Executable not found: {executablePath}");
             }
 
             var workingDirectory = Path.GetDirectoryName(executablePath);
@@ -121,11 +121,11 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
                 }
             }
 
-            using var process = Process.Start(processStartInfo);
+            var process = Process.Start(processStartInfo);
 
             if (process == null)
             {
-                return Result.Failure("Failed to start process");
+                return Result<Process?>.Failure("Failed to start process");
             }
 
             // Wait briefly to check if the process started successfully
@@ -133,14 +133,14 @@ public sealed class LinuxProcessLauncher : IProcessLauncher
 
             if (process.HasExited && process.ExitCode != 0)
             {
-                return Result.Failure($"Process exited with code {process.ExitCode}");
+                return Result<Process?>.Failure($"Process exited with code {process.ExitCode}");
             }
 
-            return Result.Success();
+            return Result<Process?>.Success(process);
         }
         catch (Exception ex)
         {
-            return Result.Failure($"Failed to launch executable: {ex.Message}");
+            return Result<Process?>.Failure($"Failed to launch executable: {ex.Message}");
         }
     }
 }

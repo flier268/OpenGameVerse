@@ -14,8 +14,8 @@ public interface IProcessLauncher
     /// <param name="arguments">Optional command-line arguments</param>
     /// <param name="environmentVariables">Optional environment variables (e.g., WINEPREFIX)</param>
     /// <param name="ct">Cancellation token</param>
-    /// <returns>Result indicating success or failure with error message</returns>
-    Task<Result> LaunchAsync(
+    /// <returns>Result indicating success or failure with optional process handle</returns>
+    Task<Result<System.Diagnostics.Process?>> LaunchAsync(
         string target,
         string? arguments = null,
         Dictionary<string, string>? environmentVariables = null,

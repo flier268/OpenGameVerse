@@ -31,11 +31,11 @@ public sealed class WindowsPlatformHost : IPlatformHost
         return _scanners;
     }
 
-    public async Task<Result> LaunchGameAsync(GameInstallation installation, CancellationToken ct)
+    public async Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(GameInstallation installation, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(installation.ExecutablePath))
         {
-            return Result.Failure("No executable path configured for this game");
+            return Result<System.Diagnostics.Process?>.Failure("No executable path configured for this game");
         }
 
         // Launch the game (no special environment variables needed on Windows)

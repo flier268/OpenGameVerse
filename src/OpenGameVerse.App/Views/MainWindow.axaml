@@ -37,7 +37,7 @@
                                 IsEnabled="{Binding !IsScanning}" />
                         <Button Content="Refresh"
                                 Command="{Binding RefreshCommand}" />
-                        <Button Content="Settings"
+                        <Button Content="設定"
                                 Command="{Binding OpenSettingsCommand}" />
                         <Button Content="Fullscreen Mode"
                                 Command="{Binding EnterFullscreenCommand}"

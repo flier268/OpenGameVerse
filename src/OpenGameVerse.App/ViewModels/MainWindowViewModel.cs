@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using OpenGameVerse.Core.Abstractions;
@@ -112,7 +114,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 Games.Add(gameVm);
 
                 // Enrich with metadata if available (fire and forget)
-                if (_metadataService != null)
+                if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
                 {
                     _ = EnrichGameMetadataAsync(game, gameVm);
                 }
@@ -186,6 +188,20 @@ public partial class MainWindowViewModel : ViewModelBase
                             }
                         }
 
+                        if (_settingsService.CurrentSettings.UpdateInstallSizeOnLibraryUpdate
+                            && existingGame.SizeBytes != gameInstallation.SizeBytes)
+                        {
+                            existingGame.SizeBytes = gameInstallation.SizeBytes;
+                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+
+                            var existingVm = Games.FirstOrDefault(vm =>
+                                string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                            if (existingVm != null)
+                            {
+                                existingVm.SizeBytes = gameInstallation.SizeBytes;
+                            }
+                        }
+
                         continue; // Already in library
                     }
 
@@ -213,7 +229,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         var gameVm = GameViewModel.FromModel(game);
                         Games.Add(gameVm);
 
-                        if (_metadataService != null)
+                        if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
                         {
                             _ = EnrichGameMetadataAsync(game, gameVm);
                         }
@@ -252,7 +268,12 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        var fullscreenViewModel = new FullscreenViewModel(_gameRepository, _platformHost, parentWindow, _metadataService);
+        var fullscreenViewModel = new FullscreenViewModel(
+            _gameRepository,
+            _platformHost,
+            parentWindow,
+            _settingsService,
+            _metadataService);
         var fullscreenWindow = new FullscreenWindow
         {
             DataContext = fullscreenViewModel
@@ -341,6 +362,31 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (launchResult.IsSuccess)
             {
+                var settings = _settingsService.CurrentSettings;
+                var mainWindow = GetMainWindow();
+                var didChangeWindow = ApplyLaunchAction(mainWindow, settings.GameLaunchAction);
+
+                var process = launchResult.Value;
+                if (process != null)
+                {
+                    process.EnableRaisingEvents = true;
+                    process.Exited += (_, _) =>
+                    {
+                        process.Dispose();
+                        if (settings.GameCloseAction == GameCloseAction.KeepMinimized)
+                        {
+                            return;
+                        }
+
+                        if (settings.GameCloseAction == GameCloseAction.RestoreWhenLaunchedFromUi && !didChangeWindow)
+                        {
+                            return;
+                        }
+
+                        Dispatcher.UIThread.Post(() => RestoreWindow(mainWindow));
+                    };
+                }
+
                 // Update last played
                 game.LastPlayed = DateTime.UtcNow;
                 await _gameRepository.UpdateGameAsync(game, CancellationToken.None);
@@ -419,7 +465,14 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var searchLower = SearchText.ToLowerInvariant();
-            filtered = filtered.Where(g => g.Title.ToLowerInvariant().Contains(searchLower));
+            if (_settingsService.CurrentSettings.UseFuzzyMatchingInFilter)
+            {
+                filtered = filtered.Where(g => IsFuzzyMatch(g.Title, searchLower));
+            }
+            else
+            {
+                filtered = filtered.Where(g => g.Title.ToLowerInvariant().Contains(searchLower));
+            }
         }
 
         // Favorites filter
@@ -459,6 +512,74 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             FilteredGames.Add(game);
         }
+    }
+
+    private static bool IsFuzzyMatch(string source, string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        var sourceLower = source.ToLowerInvariant();
+        var queryIndex = 0;
+
+        foreach (var ch in sourceLower)
+        {
+            if (ch == query[queryIndex])
+            {
+                queryIndex++;
+                if (queryIndex == query.Length)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static Window? GetMainWindow()
+    {
+        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            return desktop.MainWindow;
+        }
+
+        return null;
+    }
+
+    private static bool ApplyLaunchAction(Window? window, GameLaunchAction action)
+    {
+        if (window == null)
+        {
+            return false;
+        }
+
+        switch (action)
+        {
+            case GameLaunchAction.Minimize:
+                window.WindowState = WindowState.Minimized;
+                return true;
+            case GameLaunchAction.Hide:
+                window.Hide();
+                return true;
+            case GameLaunchAction.NoChange:
+            default:
+                return false;
+        }
+    }
+
+    private static void RestoreWindow(Window? window)
+    {
+        if (window == null)
+        {
+            return;
+        }
+
+        window.Show();
+        window.WindowState = WindowState.Normal;
+        window.Activate();
     }
 
     [RelayCommand]
