@@ -240,6 +240,7 @@ public partial class FullscreenViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
     public async Task LaunchGameAsync(GameViewModel gameViewModel)
     {
         try
@@ -316,6 +317,29 @@ public partial class FullscreenViewModel : ViewModelBase
         catch (Exception ex)
         {
             StatusMessage = $"Launch error: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task StopGameAsync(GameViewModel? gameViewModel)
+    {
+        try
+        {
+            if (gameViewModel == null)
+            {
+                return;
+            }
+
+            StatusMessage = $"Stopping {gameViewModel.Title}...";
+            var stopped = await _gameStatusMonitor.StopGameAsync(gameViewModel, CancellationToken.None);
+
+            StatusMessage = stopped > 0
+                ? $"Stopped {gameViewModel.Title}"
+                : $"No running process found for {gameViewModel.Title}";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Stop error: {ex.Message}";
         }
     }
 

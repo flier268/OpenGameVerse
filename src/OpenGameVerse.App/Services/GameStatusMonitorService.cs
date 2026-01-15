@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Avalonia.Threading;
 using OpenGameVerse.App.ViewModels;
@@ -8,9 +9,40 @@ namespace OpenGameVerse.App.Services;
 public sealed class GameStatusMonitorService : IDisposable
 {
     private readonly DispatcherTimer _timer;
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
     private readonly Dictionary<long, List<WeakReference<GameViewModel>>> _trackedGames = new();
     private readonly Dictionary<long, bool> _lastStatus = new();
+    private static readonly Lock CmdlineCacheLock = new();
+    private static readonly Dictionary<int, string?> CmdlineCache = new();
+
+    private static readonly HashSet<string> NonGameProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "steam",
+        "steamwebhelper",
+        "steamservice",
+        "steamcmd",
+        "steam.exe",
+        "steamwebhelper.exe",
+        "steamservice.exe",
+        "steamcmd.exe",
+        "explorer",
+        "explorer.exe",
+        "systemd",
+        "dbus-daemon",
+        "dbus-daemon-launch-helper",
+        "pipewire",
+        "pipewire-pulse",
+        "pulseaudio",
+        "wireplumber",
+        "gnome-shell",
+        "plasmashell",
+        "kwin_x11",
+        "kwin_wayland",
+        "xorg",
+        "xwayland",
+        "xdg-open"
+    };
+
     private bool _isPolling;
 
     public event Action<long, bool>? GameStatusChanged;
@@ -32,7 +64,7 @@ public sealed class GameStatusMonitorService : IDisposable
             {
                 if (!_trackedGames.TryGetValue(game.Id, out var list))
                 {
-                    list = new List<WeakReference<GameViewModel>>();
+                    list = [];
                     _trackedGames[game.Id] = list;
                 }
 
@@ -66,30 +98,42 @@ public sealed class GameStatusMonitorService : IDisposable
         _timer.Tick -= OnTick;
     }
 
+    public async Task<int> StopGameAsync(GameViewModel game, CancellationToken ct)
+    {
+        var target = game ?? throw new ArgumentNullException(nameof(game));
+        var processIds = await Task.Run(() => FindMatchingProcessIds(target), ct);
+        if (processIds.Count == 0)
+        {
+            return 0;
+        }
+
+        var stopped = 0;
+        foreach (var pid in processIds)
+        {
+            if (ct.IsCancellationRequested)
+            {
+                break;
+            }
+
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                process.Kill();
+                stopped++;
+            }
+            catch
+            {
+                // Ignore failures to terminate specific processes
+            }
+        }
+
+        return stopped;
+    }
+
     public Task WaitForGameExitAsync(long gameId, CancellationToken ct)
     {
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var hasSeenRunning = _lastStatus.TryGetValue(gameId, out var isRunning) && isRunning;
-
-        void Handler(long id, bool running)
-        {
-            if (id != gameId)
-            {
-                return;
-            }
-
-            if (!hasSeenRunning && running)
-            {
-                hasSeenRunning = true;
-                return;
-            }
-
-            if (hasSeenRunning && !running)
-            {
-                GameStatusChanged -= Handler;
-                tcs.TrySetResult();
-            }
-        }
 
         GameStatusChanged += Handler;
 
@@ -103,6 +147,25 @@ public sealed class GameStatusMonitorService : IDisposable
         }
 
         return tcs.Task;
+
+        void Handler(long id, bool running)
+        {
+            if (id != gameId)
+            {
+                return;
+            }
+
+            switch (hasSeenRunning)
+            {
+                case false when running:
+                    hasSeenRunning = true;
+                    return;
+                case true when !running:
+                    GameStatusChanged -= Handler;
+                    tcs.TrySetResult();
+                    break;
+            }
+        }
     }
 
     private async void OnTick(object? sender, EventArgs e)
@@ -176,6 +239,11 @@ public sealed class GameStatusMonitorService : IDisposable
 
         foreach (var process in processes)
         {
+            if (IsNonGameProcess(process))
+            {
+                continue;
+            }
+
             if (!string.IsNullOrEmpty(executablePath) && !useProtocol)
             {
                 if (IsMatchForExecutable(process, executablePath))
@@ -199,6 +267,80 @@ public sealed class GameStatusMonitorService : IDisposable
         }
 
         return false;
+    }
+
+    private static List<int> FindMatchingProcessIds(GameViewModel game)
+    {
+        var processes = GetProcessSnapshot();
+        var matches = new List<int>();
+
+        foreach (var process in processes)
+        {
+            if (IsMatchProcess(game, process))
+            {
+                matches.Add(process.Id);
+            }
+        }
+
+        return matches;
+    }
+
+    private static bool IsMatchProcess(GameViewModel game, ProcessInfo process)
+    {
+        if (IsNonGameProcess(process))
+        {
+            return false;
+        }
+
+        var executablePath = game.ExecutablePath;
+        var installPath = NormalizePath(game.InstallPath);
+        var appId = GetSteamAppId(game);
+        var useProtocol = IsProtocolUrl(executablePath);
+
+        if (!string.IsNullOrEmpty(executablePath) && !useProtocol)
+        {
+            if (IsMatchForExecutable(process, executablePath))
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(installPath))
+        {
+            if (PathContains(process, installPath))
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(appId) && IsSteamAppProcess(process, appId))
+        {
+            if (IsSteamClientProcess(process))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsSteamClientProcess(ProcessInfo process)
+    {
+        var commandLine = process.GetCommandLine();
+        if (string.IsNullOrEmpty(process.Path) && string.IsNullOrEmpty(commandLine))
+        {
+            return false;
+        }
+
+        var path = process.Path ?? string.Empty;
+        var cmd = commandLine ?? string.Empty;
+
+        return path.Contains("steam.exe", GetPathComparison())
+               || path.Contains("steamwebhelper", GetPathComparison())
+               || cmd.Contains("steam.exe", GetPathComparison())
+               || cmd.Contains("steamwebhelper", GetPathComparison());
     }
 
     private static string? GetSteamAppId(GameViewModel game)
@@ -247,8 +389,9 @@ public sealed class GameStatusMonitorService : IDisposable
             return true;
         }
 
-        if (!string.IsNullOrEmpty(process.CommandLine)
-            && process.CommandLine.Contains(normalizedExe, GetPathComparison()))
+        var commandLine = process.GetCommandLine();
+        if (!string.IsNullOrEmpty(commandLine)
+            && commandLine.Contains(normalizedExe, GetPathComparison()))
         {
             return true;
         }
@@ -271,9 +414,9 @@ public sealed class GameStatusMonitorService : IDisposable
             }
         }
 
-        if (!string.IsNullOrEmpty(process.CommandLine))
+        var commandLine = process.GetCommandLine();
+        if (!string.IsNullOrEmpty(commandLine))
         {
-            var commandLine = process.CommandLine;
             if (commandLine.Contains(appId, GetPathComparison())
                 && commandLine.Contains("steamapps", GetPathComparison()))
             {
@@ -297,8 +440,9 @@ public sealed class GameStatusMonitorService : IDisposable
             return true;
         }
 
-        if (!string.IsNullOrEmpty(process.CommandLine)
-            && process.CommandLine.Contains(installPath, GetPathComparison()))
+        var commandLine = process.GetCommandLine();
+        if (!string.IsNullOrEmpty(commandLine)
+            && commandLine.Contains(installPath, GetPathComparison()))
         {
             return true;
         }
@@ -306,8 +450,8 @@ public sealed class GameStatusMonitorService : IDisposable
         if (OperatingSystem.IsLinux())
         {
             var winePath = "Z:" + installPath.Replace('/', '\\');
-            if (!string.IsNullOrEmpty(process.CommandLine)
-                && process.CommandLine.Contains(winePath, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(commandLine)
+                && commandLine.Contains(winePath, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -344,17 +488,12 @@ public sealed class GameStatusMonitorService : IDisposable
             : StringComparison.Ordinal;
     }
 
-    private static IReadOnlyList<ProcessInfo> GetProcessSnapshot()
+    private static ReadOnlyCollection<ProcessInfo> GetProcessSnapshot()
     {
-        if (OperatingSystem.IsLinux())
-        {
-            return GetLinuxProcesses();
-        }
-
-        return GetWindowsProcesses();
+        return OperatingSystem.IsLinux() ? GetLinuxProcesses() : GetWindowsProcesses();
     }
 
-    private static IReadOnlyList<ProcessInfo> GetWindowsProcesses()
+    private static ReadOnlyCollection<ProcessInfo> GetWindowsProcesses()
     {
         var list = new List<ProcessInfo>();
         foreach (var process in Process.GetProcesses())
@@ -371,7 +510,7 @@ public sealed class GameStatusMonitorService : IDisposable
                     path = null;
                 }
 
-                list.Add(new ProcessInfo(process.Id, NormalizePath(path), null));
+                list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName));
             }
             catch
             {
@@ -379,45 +518,112 @@ public sealed class GameStatusMonitorService : IDisposable
             }
         }
 
-        return list;
+        return new ReadOnlyCollection<ProcessInfo>(list);
     }
 
-    private static IReadOnlyList<ProcessInfo> GetLinuxProcesses()
+    private static ReadOnlyCollection<ProcessInfo> GetLinuxProcesses()
     {
         var list = new List<ProcessInfo>();
-        var procRoot = "/proc";
+        const string procRoot = "/proc";
 
         if (!Directory.Exists(procRoot))
         {
-            return list;
+            return new ReadOnlyCollection<ProcessInfo>(list);
         }
 
-        foreach (var dir in Directory.EnumerateDirectories(procRoot))
+        var seen = new HashSet<int>();
+        foreach (var process in Process.GetProcesses())
         {
-            var name = Path.GetFileName(dir);
-            if (!int.TryParse(name, out var pid))
+            if (IsNonGameName(process.ProcessName))
             {
                 continue;
             }
 
-            var exePath = TryReadLink(Path.Combine(dir, "exe"));
-            var cmdline = TryReadCmdline(Path.Combine(dir, "cmdline"));
+            string? path;
+            try
+            {
+                path = process.MainModule?.FileName;
+            }
+            catch
+            {
+                continue;
+            }
 
-            list.Add(new ProcessInfo(pid, NormalizePath(exePath), cmdline));
+            if (path is null)
+                continue;
+
+            seen.Add(process.Id);
+            var cmdlinePath = Path.Combine(procRoot, process.Id.ToString(), "cmdline");
+            list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, cmdlinePath));
         }
 
-        return list;
+        PruneCmdlineCache(seen);
+        return new ReadOnlyCollection<ProcessInfo>(list);
+
+        static void PruneCmdlineCache(HashSet<int> seenPids)
+        {
+            lock (CmdlineCacheLock)
+            {
+                if (CmdlineCache.Count == 0)
+                {
+                    return;
+                }
+
+                var toRemove = new List<int>();
+                foreach (var pid in CmdlineCache.Keys)
+                {
+                    if (!seenPids.Contains(pid))
+                    {
+                        toRemove.Add(pid);
+                    }
+                }
+
+                foreach (var pid in toRemove)
+                {
+                    CmdlineCache.Remove(pid);
+                }
+            }
+        }
     }
 
-    private static string? TryReadLink(string path)
+    private sealed class ProcessInfo
     {
-        try
+        private readonly string? _cmdlinePath;
+
+        public ProcessInfo(int id, string? path, string? name, string? cmdlinePath = null)
         {
-            return new FileInfo(path).ResolveLinkTarget(true)?.FullName;
+            Id = id;
+            Path = path;
+            Name = name;
+            _cmdlinePath = cmdlinePath;
         }
-        catch
+
+        public int Id { get; }
+        public string? Path { get; }
+        public string? Name { get; }
+
+        public string? GetCommandLine()
         {
-            return null;
+            if (_cmdlinePath is null)
+            {
+                return null;
+            }
+
+            lock (CmdlineCacheLock)
+            {
+                if (CmdlineCache.TryGetValue(Id, out var cached))
+                {
+                    return cached;
+                }
+            }
+
+            var cmdline = TryReadCmdline(_cmdlinePath);
+            lock (CmdlineCacheLock)
+            {
+                CmdlineCache[Id] = cmdline;
+            }
+
+            return cmdline;
         }
     }
 
@@ -426,7 +632,7 @@ public sealed class GameStatusMonitorService : IDisposable
         try
         {
             var data = File.ReadAllText(path);
-            return data.Replace('\0', ' ').Trim();
+            return data.TrimEnd('\0');
         }
         catch
         {
@@ -434,9 +640,38 @@ public sealed class GameStatusMonitorService : IDisposable
         }
     }
 
-    private sealed record ProcessInfo(int Id, string? Path, string? CommandLine);
+    private static bool IsNonGameProcess(ProcessInfo process)
+    {
+        if (IsNonGameName(process.Name))
+        {
+            return true;
+        }
 
-    private IReadOnlyList<GameViewModel> CollectLiveGames()
+        if (!string.IsNullOrEmpty(process.Path))
+        {
+            var fileName = Path.GetFileName(process.Path);
+            if (IsNonGameName(fileName))
+            {
+                return true;
+            }
+
+            var noExtension = Path.GetFileNameWithoutExtension(fileName);
+            if (IsNonGameName(noExtension))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsNonGameName(string? name)
+    {
+        return !string.IsNullOrWhiteSpace(name) && NonGameProcessNames.Contains(name);
+    }
+
+
+    private ReadOnlyCollection<GameViewModel> CollectLiveGames()
     {
         var games = new List<GameViewModel>();
         var toRemove = new List<long>();
@@ -468,6 +703,6 @@ public sealed class GameStatusMonitorService : IDisposable
             _trackedGames.Remove(id);
         }
 
-        return games;
+        return new ReadOnlyCollection<GameViewModel>(games);
     }
 }

@@ -115,6 +115,10 @@
                                             <MenuItem Header="Launch Game"
                                                       Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LaunchGameCommand}"
                                                       CommandParameter="{Binding}" />
+                                            <MenuItem Header="Stop Game"
+                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StopGameCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      IsEnabled="{Binding IsRunning}" />
                                             <Separator />
                                             <MenuItem Header="Toggle Favorite"
                                                       Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"
@@ -217,6 +221,10 @@
                                             <MenuItem Header="Launch Game"
                                                       Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LaunchGameCommand}"
                                                       CommandParameter="{Binding}" />
+                                            <MenuItem Header="Stop Game"
+                                                      Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StopGameCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      IsEnabled="{Binding IsRunning}" />
                                             <Separator />
                                             <MenuItem Header="Toggle Favorite"
                                                       Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToggleFavoriteCommand}"

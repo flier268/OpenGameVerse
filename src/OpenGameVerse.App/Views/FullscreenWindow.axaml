@@ -109,6 +109,17 @@
                                 <Border Classes="game-tile"
                                         Focusable="True"
                                         DoubleTapped="OnGameDoubleTapped">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Launch Game"
+                                                      Command="{Binding $parent[Window].((vm:FullscreenViewModel)DataContext).LaunchGameCommand}"
+                                                      CommandParameter="{Binding}" />
+                                            <MenuItem Header="Stop Game"
+                                                      Command="{Binding $parent[Window].((vm:FullscreenViewModel)DataContext).StopGameCommand}"
+                                                      CommandParameter="{Binding}"
+                                                      IsEnabled="{Binding IsRunning}" />
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <Grid>
                                         <Border Name="FocusRing"
                                                 BorderBrush="{DynamicResource ThemeAccentBrush}"
