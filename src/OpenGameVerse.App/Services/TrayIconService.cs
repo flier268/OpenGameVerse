@@ -55,7 +55,7 @@ public sealed class TrayIconService : IDisposable
 
     private void InitializeTrayIcon()
     {
-        var icon = new WindowIcon(AssetLoader.Open(new Uri("avares://OpenGameVerse.App/Assets/avalonia-logo.ico")));
+        var icon = new WindowIcon(AssetLoader.Open(new Uri("avares://OpenGameVerse.App/Assets/opengameverse-icon.png")));
 
         var menu = new NativeMenu();
         var openItem = new NativeMenuItem("顯示 OpenGameVerse");
