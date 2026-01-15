@@ -235,6 +235,8 @@ public sealed class GameStatusMonitorService : IDisposable
         var executablePath = game.ExecutablePath;
         var installPath = NormalizePath(game.InstallPath);
         var appId = GetSteamAppId(game);
+        var flatpakAppId = GetFlatpakAppId(game);
+        var flatpakProcessNames = GetFlatpakProcessNames(flatpakAppId, game.Title);
         var useProtocol = IsProtocolUrl(executablePath);
 
         foreach (var process in processes)
@@ -246,13 +248,20 @@ public sealed class GameStatusMonitorService : IDisposable
 
             if (!string.IsNullOrEmpty(executablePath) && !useProtocol)
             {
-                if (IsMatchForExecutable(process, executablePath))
+                if (IsFlatpakExecutable(executablePath))
+                {
+                    if (IsFlatpakAppProcess(process, flatpakAppId, flatpakProcessNames))
+                    {
+                        return true;
+                    }
+                }
+                else if (IsMatchForExecutable(process, executablePath))
                 {
                     return true;
                 }
             }
 
-            if (!string.IsNullOrEmpty(installPath))
+            if (!string.IsNullOrEmpty(installPath) && !IsInstallPathTooBroad(installPath))
             {
                 if (PathContains(process, installPath))
                 {
@@ -295,11 +304,20 @@ public sealed class GameStatusMonitorService : IDisposable
         var executablePath = game.ExecutablePath;
         var installPath = NormalizePath(game.InstallPath);
         var appId = GetSteamAppId(game);
+        var flatpakAppId = GetFlatpakAppId(game);
+        var flatpakProcessNames = GetFlatpakProcessNames(flatpakAppId, game.Title);
         var useProtocol = IsProtocolUrl(executablePath);
 
         if (!string.IsNullOrEmpty(executablePath) && !useProtocol)
         {
-            if (IsMatchForExecutable(process, executablePath))
+            if (IsFlatpakExecutable(executablePath))
+            {
+                if (IsFlatpakAppProcess(process, flatpakAppId, flatpakProcessNames))
+                {
+                    return true;
+                }
+            }
+            else if (IsMatchForExecutable(process, executablePath))
             {
                 return true;
             }
@@ -307,7 +325,7 @@ public sealed class GameStatusMonitorService : IDisposable
 
         if (!string.IsNullOrEmpty(installPath))
         {
-            if (PathContains(process, installPath))
+            if (!IsInstallPathTooBroad(installPath) && PathContains(process, installPath))
             {
                 return true;
             }
@@ -371,9 +389,125 @@ public sealed class GameStatusMonitorService : IDisposable
         return long.TryParse(last, out _) ? last : null;
     }
 
+    private static string? GetFlatpakAppId(GameViewModel game)
+    {
+        var installPath = NormalizePath(game.InstallPath);
+        if (string.IsNullOrWhiteSpace(installPath))
+        {
+            return null;
+        }
+
+        const string marker = "/flatpak/app/";
+        var index = installPath.IndexOf(marker, StringComparison.Ordinal);
+        if (index < 0)
+        {
+            return null;
+        }
+
+        var remaining = installPath[(index + marker.Length)..];
+        var parts = remaining.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length > 0 ? parts[0] : null;
+    }
+
     private static bool IsProtocolUrl(string? path)
     {
         return !string.IsNullOrWhiteSpace(path) && path.Contains("://", StringComparison.Ordinal);
+    }
+
+    private static bool IsFlatpakExecutable(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        return string.Equals(Path.GetFileName(path), "flatpak", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsFlatpakAppProcess(ProcessInfo process, string? appId)
+    {
+        return IsFlatpakAppProcess(process, appId, Array.Empty<string>());
+    }
+
+    private static bool IsFlatpakAppProcess(ProcessInfo process, string? appId, IReadOnlyCollection<string> processNames)
+    {
+        if (string.IsNullOrWhiteSpace(appId))
+        {
+            if (processNames.Count == 0)
+            {
+                return false;
+            }
+        }
+
+        var commandLine = process.GetCommandLine();
+        if (!string.IsNullOrEmpty(commandLine) && !string.IsNullOrWhiteSpace(appId))
+        {
+            if (commandLine.Contains(appId, GetPathComparison()))
+            {
+                return true;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(process.Path) && !string.IsNullOrWhiteSpace(appId))
+        {
+            var flatpakAppRoot = "/flatpak/app/" + appId + "/";
+            if (process.Path.Contains(flatpakAppRoot, GetPathComparison()))
+            {
+                return true;
+            }
+        }
+
+        if (processNames.Count > 0)
+        {
+            var name = NormalizeProcessName(process.Name);
+            if (!string.IsNullOrEmpty(name))
+            {
+                foreach (var candidate in processNames)
+                {
+                    if (string.Equals(name, candidate, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!string.IsNullOrEmpty(process.Path)
+                            && process.Path.StartsWith("/app/", StringComparison.Ordinal))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static IReadOnlyCollection<string> GetFlatpakProcessNames(string? appId, string? title)
+    {
+        var names = new List<string>();
+        if (!string.IsNullOrWhiteSpace(appId))
+        {
+            var lastSegment = appId.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            if (!string.IsNullOrWhiteSpace(lastSegment))
+            {
+                names.Add(lastSegment);
+                names.Add(lastSegment.ToLowerInvariant());
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            var trimmed = title.Trim();
+            if (trimmed.Length > 0)
+            {
+                names.Add(trimmed);
+                names.Add(trimmed.ToLowerInvariant());
+            }
+        }
+
+        return names;
+    }
+
+    private static string? NormalizeProcessName(string? name)
+    {
+        return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }
 
     private static bool IsMatchForExecutable(ProcessInfo process, string executablePath)
@@ -486,6 +620,34 @@ public sealed class GameStatusMonitorService : IDisposable
         return OperatingSystem.IsWindows()
             ? StringComparison.OrdinalIgnoreCase
             : StringComparison.Ordinal;
+    }
+
+    private static bool IsInstallPathTooBroad(string installPath)
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return false;
+        }
+
+        var normalized = installPath.TrimEnd(Path.DirectorySeparatorChar);
+        if (string.IsNullOrEmpty(normalized))
+        {
+            return true;
+        }
+
+        return string.Equals(normalized, "/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/share", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/share/applications", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/local/share", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/local/share/applications", StringComparison.Ordinal)
+               || string.Equals(normalized, "/lib", StringComparison.Ordinal)
+               || string.Equals(normalized, "/lib64", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/lib", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/lib64", StringComparison.Ordinal);
     }
 
     private static ReadOnlyCollection<ProcessInfo> GetProcessSnapshot()

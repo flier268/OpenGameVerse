@@ -114,7 +114,13 @@ public sealed class DesktopFileScanner : IGameScanner
         }
 
         // Try to determine install path from the executable
-        var installPath = entry.Path ?? Path.GetDirectoryName(entry.Exec) ?? string.Empty;
+        var installPath = entry.Path ?? string.Empty;
+
+        var flatpakInstallPath = TryResolveFlatpakInstallPath(entry);
+        if (!string.IsNullOrWhiteSpace(flatpakInstallPath))
+        {
+            installPath = flatpakInstallPath;
+        }
 
         // If we have a working directory (Path field), use that
         if (!string.IsNullOrWhiteSpace(entry.Path) && Directory.Exists(entry.Path))
@@ -125,7 +131,9 @@ public sealed class DesktopFileScanner : IGameScanner
         else if (File.Exists(entry.Exec))
         {
             var execDir = Path.GetDirectoryName(entry.Exec);
-            if (!string.IsNullOrWhiteSpace(execDir) && Directory.Exists(execDir))
+            if (!string.IsNullOrWhiteSpace(execDir)
+                && Directory.Exists(execDir)
+                && !IsSystemBinDirectory(execDir))
             {
                 installPath = execDir;
             }
@@ -169,6 +177,39 @@ public sealed class DesktopFileScanner : IGameScanner
             IconPath = iconPath,
             SizeBytes = sizeBytes
         };
+    }
+
+    private static string? TryResolveFlatpakInstallPath(DesktopEntry entry)
+    {
+        var appId = Path.GetFileNameWithoutExtension(entry.FilePath);
+        if (string.IsNullOrWhiteSpace(appId))
+        {
+            return null;
+        }
+
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var userPath = Path.Combine(home, ".local", "share", "flatpak", "app", appId);
+        if (Directory.Exists(userPath))
+        {
+            return userPath;
+        }
+
+        var systemPath = Path.Combine("/var/lib/flatpak/app", appId);
+        if (Directory.Exists(systemPath))
+        {
+            return systemPath;
+        }
+
+        return null;
+    }
+
+    private static bool IsSystemBinDirectory(string path)
+    {
+        var normalized = path.TrimEnd(Path.DirectorySeparatorChar);
+        return string.Equals(normalized, "/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
+               || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal);
     }
 
     private static string? FindIconPath(string iconName)
