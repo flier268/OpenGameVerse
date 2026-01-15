@@ -71,7 +71,7 @@ jobs:
           include-prerelease: true
 
       - name: Publish
-        run: dotnet publish -c Release -r ${{ matrix.rid }} -o ${{ matrix.publish_dir }} src/OpenGameVerse.Console/OpenGameVerse.Console.csproj
+        run: dotnet publish -c Release -r ${{ matrix.rid }} -o ${{ matrix.publish_dir }} src/OpenGameVerse.App/OpenGameVerse.App.csproj
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
