@@ -18,7 +18,7 @@ public partial class FullscreenViewModel : ViewModelBase
     private readonly IMetadataService? _metadataService;
     private readonly Window _parentWindow;
     private readonly IAppSettingsService _settingsService;
-    private readonly GameStatusMonitorService _gameStatusMonitor;
+    private readonly GameStatusMonitorCoordinator _gameStatusMonitor;
 
     [ObservableProperty]
     public partial ObservableCollection<GameViewModel> Games { get; set; } = new();
@@ -37,7 +37,7 @@ public partial class FullscreenViewModel : ViewModelBase
         IPlatformHost platformHost,
         Window parentWindow,
         IAppSettingsService settingsService,
-        GameStatusMonitorService gameStatusMonitor,
+        GameStatusMonitorCoordinator gameStatusMonitor,
         IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;

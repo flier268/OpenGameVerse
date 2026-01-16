@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -12,6 +13,8 @@ using OpenGameVerse.Metadata.Abstractions;
 using OpenGameVerse.Metadata.Services;
 using OpenGameVerse.Platform.Windows;
 using OpenGameVerse.Platform.Linux;
+using WindowsGameStatusMonitorService = OpenGameVerse.Platform.Windows.GameStatusMonitorService;
+using LinuxGameStatusMonitorService = OpenGameVerse.Platform.Linux.GameStatusMonitorService;
 
 namespace OpenGameVerse.App;
 
@@ -25,7 +28,8 @@ public partial class App : Application
     private IAppSettingsService? _settingsService;
     private TrayIconService? _trayIconService;
     private WindowBehaviorService? _windowBehaviorService;
-    private GameStatusMonitorService? _gameStatusMonitorService;
+    private IGameStatusMonitorService? _gameStatusMonitorService;
+    private GameStatusMonitorCoordinator? _gameStatusMonitorCoordinator;
 
     public override void Initialize()
     {
@@ -49,12 +53,20 @@ public partial class App : Application
         _gameRepository = new GameRepository(connectionString);
         _categoryRepository = new CategoryRepository(connectionString);
 
-        // Platform host
-#if WINDOWS
-        _platformHost = new WindowsPlatformHost();
-#else
-        _platformHost = new LinuxPlatformHost();
-#endif
+        if (OperatingSystem.IsWindows())
+        {
+            _platformHost = new WindowsPlatformHost();
+            _gameStatusMonitorService = new WindowsGameStatusMonitorService();
+        }
+        else if(OperatingSystem.IsLinux())
+        {
+            _platformHost = new LinuxPlatformHost();
+            _gameStatusMonitorService = new LinuxGameStatusMonitorService();
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
 
         // Metadata services
         var clientId = Environment.GetEnvironmentVariable("IGDB_CLIENT_ID") ?? "";
@@ -96,8 +108,10 @@ public partial class App : Application
             // Set dialog service's main window
             _dialogService?.SetMainWindow(mainWindow);
 
-            _gameStatusMonitorService = new GameStatusMonitorService();
-            _gameStatusMonitorService.Start();
+            _gameStatusMonitorCoordinator = new GameStatusMonitorCoordinator(
+                _gameStatusMonitorService!,
+                SynchronizationContext.Current);
+            _gameStatusMonitorCoordinator.Start();
 
             var viewModel = new MainWindowViewModel(
                 _gameRepository!,
@@ -105,7 +119,7 @@ public partial class App : Application
                 _platformHost!,
                 _dialogService!,
                 _settingsService!,
-                _gameStatusMonitorService,
+                _gameStatusMonitorCoordinator,
                 _metadataService);
 
             mainWindow.DataContext = viewModel;
@@ -139,7 +153,7 @@ public partial class App : Application
                 _platformHost!,
                 mainWindow,
                 _settingsService!,
-                _gameStatusMonitorService!,
+                _gameStatusMonitorCoordinator!,
                 _metadataService);
 
             var fullscreenWindow = new FullscreenWindow

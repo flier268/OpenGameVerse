@@ -1,19 +1,22 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using Avalonia.Threading;
-using OpenGameVerse.App.ViewModels;
+using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 
-namespace OpenGameVerse.App.Services;
+namespace OpenGameVerse.Core.Services;
 
-public sealed class GameStatusMonitorService : IDisposable
+public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
 {
-    private readonly DispatcherTimer _timer;
+    private readonly TimeSpan _interval;
     private readonly Lock _lock = new();
-    private readonly Dictionary<long, List<WeakReference<GameViewModel>>> _trackedGames = new();
+    private readonly Dictionary<long, GameStatusTarget> _trackedGames = new();
     private readonly Dictionary<long, bool> _lastStatus = new();
-    private static readonly Lock CmdlineCacheLock = new();
-    private static readonly Dictionary<int, string?> CmdlineCache = new();
+    private CancellationTokenSource? _cts;
+    private Task? _pollingTask;
+    private int _isPolling;
+
+    protected static readonly Lock CmdlineCacheLock = new();
+    protected static readonly Dictionary<int, string?> CmdlineCache = new();
 
     private static readonly HashSet<string> NonGameProcessNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -43,62 +46,69 @@ public sealed class GameStatusMonitorService : IDisposable
         "xdg-open"
     };
 
-    private bool _isPolling;
-
     public event Action<long, bool>? GameStatusChanged;
 
-    public GameStatusMonitorService(TimeSpan? interval = null)
+    protected GameStatusMonitorServiceBase(TimeSpan? interval = null)
     {
-        _timer = new DispatcherTimer
-        {
-            Interval = interval ?? TimeSpan.FromSeconds(2)
-        };
-        _timer.Tick += OnTick;
+        _interval = interval ?? TimeSpan.FromSeconds(1);
     }
 
-    public void UpdateTrackedGames(IEnumerable<GameViewModel> games)
+    protected abstract StringComparison PathComparison { get; }
+
+    protected virtual bool IncludeWinePath => false;
+
+    protected virtual bool IsInstallPathTooBroad(string installPath)
     {
+        return false;
+    }
+
+    protected abstract ReadOnlyCollection<ProcessInfo> GetProcessSnapshot();
+
+    public void UpdateTrackedGames(IEnumerable<GameStatusTarget> games)
+    {
+        ArgumentNullException.ThrowIfNull(games);
+
         lock (_lock)
         {
+            _trackedGames.Clear();
             foreach (var game in games)
             {
-                if (!_trackedGames.TryGetValue(game.Id, out var list))
-                {
-                    list = [];
-                    _trackedGames[game.Id] = list;
-                }
-
-                if (!list.Any(reference => reference.TryGetTarget(out var target) && ReferenceEquals(target, game)))
-                {
-                    list.Add(new WeakReference<GameViewModel>(game));
-                }
+                _trackedGames[game.Id] = game;
             }
         }
     }
 
     public void Start()
     {
-        if (!_timer.IsEnabled)
+        if (_cts != null)
         {
-            _timer.Start();
+            return;
         }
+
+        _cts = new CancellationTokenSource();
+        _pollingTask = Task.Run(() => PollAsync(_cts.Token));
     }
 
     public void Stop()
     {
-        if (_timer.IsEnabled)
+        if (_cts == null)
         {
-            _timer.Stop();
+            return;
         }
+
+        var cts = _cts;
+        _cts = null;
+        cts.Cancel();
+        cts.Dispose();
+        _pollingTask = null;
     }
 
     public void Dispose()
     {
         Stop();
-        _timer.Tick -= OnTick;
     }
 
-    public async Task<int> StopGameAsync(GameViewModel game, CancellationToken ct)
+    public async Task<int> StopGameAsync(GameStatusTarget game, CancellationToken ct)
     {
         var target = game ?? throw new ArgumentNullException(nameof(game));
         var processIds = await Task.Run(() => FindMatchingProcessIds(target), ct);
@@ -168,17 +178,37 @@ public sealed class GameStatusMonitorService : IDisposable
         }
     }
 
-    private async void OnTick(object? sender, EventArgs e)
+    private async Task PollAsync(CancellationToken ct)
     {
-        if (_isPolling)
+        try
+        {
+            using var timer = new PeriodicTimer(_interval);
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                if (ct.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                await PollOnceAsync(ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancellation during shutdown
+        }
+    }
+
+    private async Task PollOnceAsync(CancellationToken ct)
+    {
+        if (Interlocked.Exchange(ref _isPolling, 1) == 1)
         {
             return;
         }
 
-        _isPolling = true;
         try
         {
-            IReadOnlyList<GameViewModel> games;
+            IReadOnlyList<GameStatusTarget> games;
             lock (_lock)
             {
                 games = CollectLiveGames();
@@ -189,35 +219,32 @@ public sealed class GameStatusMonitorService : IDisposable
                 return;
             }
 
-            var statusMap = await Task.Run(() => BuildStatusMap(games));
-
-            Dispatcher.UIThread.Post(() =>
+            Dictionary<long, bool> statusMap;
+            try
             {
-                foreach (var game in games)
-                {
-                    if (statusMap.TryGetValue(game.Id, out var isRunning))
-                    {
-                        game.IsRunning = isRunning;
-                    }
-                }
+                statusMap = await Task.Run(() => BuildStatusMap(games), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
 
-                foreach (var (id, isRunning) in statusMap)
+            foreach (var (id, isRunning) in statusMap)
+            {
+                if (!_lastStatus.TryGetValue(id, out var wasRunning) || wasRunning != isRunning)
                 {
-                    if (!_lastStatus.TryGetValue(id, out var wasRunning) || wasRunning != isRunning)
-                    {
-                        _lastStatus[id] = isRunning;
-                        GameStatusChanged?.Invoke(id, isRunning);
-                    }
+                    _lastStatus[id] = isRunning;
+                    GameStatusChanged?.Invoke(id, isRunning);
                 }
-            });
+            }
         }
         finally
         {
-            _isPolling = false;
+            Interlocked.Exchange(ref _isPolling, 0);
         }
     }
 
-    private static Dictionary<long, bool> BuildStatusMap(IReadOnlyList<GameViewModel> games)
+    private Dictionary<long, bool> BuildStatusMap(IReadOnlyList<GameStatusTarget> games)
     {
         var processes = GetProcessSnapshot();
         var map = new Dictionary<long, bool>(games.Count);
@@ -230,7 +257,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return map;
     }
 
-    private static bool IsGameRunning(GameViewModel game, IReadOnlyList<ProcessInfo> processes)
+    private bool IsGameRunning(GameStatusTarget game, IReadOnlyList<ProcessInfo> processes)
     {
         var executablePath = game.ExecutablePath;
         var installPath = NormalizePath(game.InstallPath);
@@ -278,7 +305,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return false;
     }
 
-    private static List<int> FindMatchingProcessIds(GameViewModel game)
+    private List<int> FindMatchingProcessIds(GameStatusTarget game)
     {
         var processes = GetProcessSnapshot();
         var matches = new List<int>();
@@ -294,7 +321,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return matches;
     }
 
-    private static bool IsMatchProcess(GameViewModel game, ProcessInfo process)
+    private bool IsMatchProcess(GameStatusTarget game, ProcessInfo process)
     {
         if (IsNonGameProcess(process))
         {
@@ -344,7 +371,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return false;
     }
 
-    private static bool IsSteamClientProcess(ProcessInfo process)
+    private bool IsSteamClientProcess(ProcessInfo process)
     {
         var commandLine = process.GetCommandLine();
         if (string.IsNullOrEmpty(process.Path) && string.IsNullOrEmpty(commandLine))
@@ -355,13 +382,13 @@ public sealed class GameStatusMonitorService : IDisposable
         var path = process.Path ?? string.Empty;
         var cmd = commandLine ?? string.Empty;
 
-        return path.Contains("steam.exe", GetPathComparison())
-               || path.Contains("steamwebhelper", GetPathComparison())
-               || cmd.Contains("steam.exe", GetPathComparison())
-               || cmd.Contains("steamwebhelper", GetPathComparison());
+        return path.Contains("steam.exe", PathComparison)
+               || path.Contains("steamwebhelper", PathComparison)
+               || cmd.Contains("steam.exe", PathComparison)
+               || cmd.Contains("steamwebhelper", PathComparison);
     }
 
-    private static string? GetSteamAppId(GameViewModel game)
+    private static string? GetSteamAppId(GameStatusTarget game)
     {
         if (!string.IsNullOrWhiteSpace(game.PlatformId))
         {
@@ -389,7 +416,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return long.TryParse(last, out _) ? last : null;
     }
 
-    private static string? GetFlatpakAppId(GameViewModel game)
+    private static string? GetFlatpakAppId(GameStatusTarget game)
     {
         var installPath = NormalizePath(game.InstallPath);
         if (string.IsNullOrWhiteSpace(installPath))
@@ -424,12 +451,12 @@ public sealed class GameStatusMonitorService : IDisposable
         return string.Equals(Path.GetFileName(path), "flatpak", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsFlatpakAppProcess(ProcessInfo process, string? appId)
+    private bool IsFlatpakAppProcess(ProcessInfo process, string? appId)
     {
         return IsFlatpakAppProcess(process, appId, Array.Empty<string>());
     }
 
-    private static bool IsFlatpakAppProcess(ProcessInfo process, string? appId, IReadOnlyCollection<string> processNames)
+    private bool IsFlatpakAppProcess(ProcessInfo process, string? appId, IReadOnlyCollection<string> processNames)
     {
         if (string.IsNullOrWhiteSpace(appId))
         {
@@ -442,7 +469,7 @@ public sealed class GameStatusMonitorService : IDisposable
         var commandLine = process.GetCommandLine();
         if (!string.IsNullOrEmpty(commandLine) && !string.IsNullOrWhiteSpace(appId))
         {
-            if (commandLine.Contains(appId, GetPathComparison()))
+            if (commandLine.Contains(appId, PathComparison))
             {
                 return true;
             }
@@ -451,7 +478,7 @@ public sealed class GameStatusMonitorService : IDisposable
         if (!string.IsNullOrEmpty(process.Path) && !string.IsNullOrWhiteSpace(appId))
         {
             var flatpakAppRoot = "/flatpak/app/" + appId + "/";
-            if (process.Path.Contains(flatpakAppRoot, GetPathComparison()))
+            if (process.Path.Contains(flatpakAppRoot, PathComparison))
             {
                 return true;
             }
@@ -510,7 +537,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return string.IsNullOrWhiteSpace(name) ? null : name.Trim();
     }
 
-    private static bool IsMatchForExecutable(ProcessInfo process, string executablePath)
+    private bool IsMatchForExecutable(ProcessInfo process, string executablePath)
     {
         var normalizedExe = NormalizePath(executablePath);
         if (string.IsNullOrEmpty(normalizedExe))
@@ -525,7 +552,7 @@ public sealed class GameStatusMonitorService : IDisposable
 
         var commandLine = process.GetCommandLine();
         if (!string.IsNullOrEmpty(commandLine)
-            && commandLine.Contains(normalizedExe, GetPathComparison()))
+            && commandLine.Contains(normalizedExe, PathComparison))
         {
             return true;
         }
@@ -533,7 +560,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return false;
     }
 
-    private static bool IsSteamAppProcess(ProcessInfo process, string appId)
+    private bool IsSteamAppProcess(ProcessInfo process, string appId)
     {
         if (string.IsNullOrEmpty(appId))
         {
@@ -542,7 +569,7 @@ public sealed class GameStatusMonitorService : IDisposable
 
         if (!string.IsNullOrEmpty(process.Path))
         {
-            if (process.Path.Contains(Path.Combine("compatdata", appId), GetPathComparison()))
+            if (process.Path.Contains(Path.Combine("compatdata", appId), PathComparison))
             {
                 return true;
             }
@@ -551,13 +578,13 @@ public sealed class GameStatusMonitorService : IDisposable
         var commandLine = process.GetCommandLine();
         if (!string.IsNullOrEmpty(commandLine))
         {
-            if (commandLine.Contains(appId, GetPathComparison())
-                && commandLine.Contains("steamapps", GetPathComparison()))
+            if (commandLine.Contains(appId, PathComparison)
+                && commandLine.Contains("steamapps", PathComparison))
             {
                 return true;
             }
 
-            if (commandLine.Contains(Path.Combine("compatdata", appId), GetPathComparison()))
+            if (commandLine.Contains(Path.Combine("compatdata", appId), PathComparison))
             {
                 return true;
             }
@@ -566,22 +593,22 @@ public sealed class GameStatusMonitorService : IDisposable
         return false;
     }
 
-    private static bool PathContains(ProcessInfo process, string installPath)
+    private bool PathContains(ProcessInfo process, string installPath)
     {
         if (!string.IsNullOrEmpty(process.Path)
-            && process.Path.StartsWith(installPath, GetPathComparison()))
+            && process.Path.StartsWith(installPath, PathComparison))
         {
             return true;
         }
 
         var commandLine = process.GetCommandLine();
         if (!string.IsNullOrEmpty(commandLine)
-            && commandLine.Contains(installPath, GetPathComparison()))
+            && commandLine.Contains(installPath, PathComparison))
         {
             return true;
         }
 
-        if (OperatingSystem.IsLinux())
+        if (IncludeWinePath)
         {
             var winePath = "Z:" + installPath.Replace('/', '\\');
             if (!string.IsNullOrEmpty(commandLine)
@@ -594,7 +621,7 @@ public sealed class GameStatusMonitorService : IDisposable
         return false;
     }
 
-    private static string NormalizePath(string? path)
+    protected static string NormalizePath(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -605,150 +632,42 @@ public sealed class GameStatusMonitorService : IDisposable
             .Replace('/', Path.DirectorySeparatorChar);
     }
 
-    private static bool PathEquals(string? left, string? right)
+    private bool PathEquals(string? left, string? right)
     {
         if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right))
         {
             return false;
         }
 
-        return string.Equals(left, right, GetPathComparison());
+        return string.Equals(left, right, PathComparison);
     }
 
-    private static StringComparison GetPathComparison()
+    protected static void PruneCmdlineCache(HashSet<int> seenPids)
     {
-        return OperatingSystem.IsWindows()
-            ? StringComparison.OrdinalIgnoreCase
-            : StringComparison.Ordinal;
-    }
-
-    private static bool IsInstallPathTooBroad(string installPath)
-    {
-        if (!OperatingSystem.IsLinux())
+        lock (CmdlineCacheLock)
         {
-            return false;
-        }
-
-        var normalized = installPath.TrimEnd(Path.DirectorySeparatorChar);
-        if (string.IsNullOrEmpty(normalized))
-        {
-            return true;
-        }
-
-        return string.Equals(normalized, "/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/share", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/share/applications", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/share", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/share/applications", StringComparison.Ordinal)
-               || string.Equals(normalized, "/lib", StringComparison.Ordinal)
-               || string.Equals(normalized, "/lib64", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/lib", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/lib64", StringComparison.Ordinal);
-    }
-
-    private static ReadOnlyCollection<ProcessInfo> GetProcessSnapshot()
-    {
-        return OperatingSystem.IsLinux() ? GetLinuxProcesses() : GetWindowsProcesses();
-    }
-
-    private static ReadOnlyCollection<ProcessInfo> GetWindowsProcesses()
-    {
-        var list = new List<ProcessInfo>();
-        foreach (var process in Process.GetProcesses())
-        {
-            try
+            if (CmdlineCache.Count == 0)
             {
-                string? path = null;
-                try
-                {
-                    path = process.MainModule?.FileName;
-                }
-                catch
-                {
-                    path = null;
-                }
-
-                list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName));
-            }
-            catch
-            {
-                // Ignore process access failures
-            }
-        }
-
-        return new ReadOnlyCollection<ProcessInfo>(list);
-    }
-
-    private static ReadOnlyCollection<ProcessInfo> GetLinuxProcesses()
-    {
-        var list = new List<ProcessInfo>();
-        const string procRoot = "/proc";
-
-        if (!Directory.Exists(procRoot))
-        {
-            return new ReadOnlyCollection<ProcessInfo>(list);
-        }
-
-        var seen = new HashSet<int>();
-        foreach (var process in Process.GetProcesses())
-        {
-            if (IsNonGameName(process.ProcessName))
-            {
-                continue;
+                return;
             }
 
-            string? path;
-            try
+            var toRemove = new List<int>();
+            foreach (var pid in CmdlineCache.Keys)
             {
-                path = process.MainModule?.FileName;
-            }
-            catch
-            {
-                continue;
-            }
-
-            if (path is null)
-                continue;
-
-            seen.Add(process.Id);
-            var cmdlinePath = Path.Combine(procRoot, process.Id.ToString(), "cmdline");
-            list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, cmdlinePath));
-        }
-
-        PruneCmdlineCache(seen);
-        return new ReadOnlyCollection<ProcessInfo>(list);
-
-        static void PruneCmdlineCache(HashSet<int> seenPids)
-        {
-            lock (CmdlineCacheLock)
-            {
-                if (CmdlineCache.Count == 0)
+                if (!seenPids.Contains(pid))
                 {
-                    return;
-                }
-
-                var toRemove = new List<int>();
-                foreach (var pid in CmdlineCache.Keys)
-                {
-                    if (!seenPids.Contains(pid))
-                    {
-                        toRemove.Add(pid);
-                    }
-                }
-
-                foreach (var pid in toRemove)
-                {
-                    CmdlineCache.Remove(pid);
+                    toRemove.Add(pid);
                 }
             }
+
+            foreach (var pid in toRemove)
+            {
+                CmdlineCache.Remove(pid);
+            }
         }
     }
 
-    private sealed class ProcessInfo
+    protected sealed class ProcessInfo
     {
         private readonly string? _cmdlinePath;
 
@@ -789,7 +708,7 @@ public sealed class GameStatusMonitorService : IDisposable
         }
     }
 
-    private static string? TryReadCmdline(string path)
+    protected static string? TryReadCmdline(string path)
     {
         try
         {
@@ -832,39 +751,14 @@ public sealed class GameStatusMonitorService : IDisposable
         return !string.IsNullOrWhiteSpace(name) && NonGameProcessNames.Contains(name);
     }
 
-
-    private ReadOnlyCollection<GameViewModel> CollectLiveGames()
+    private ReadOnlyCollection<GameStatusTarget> CollectLiveGames()
     {
-        var games = new List<GameViewModel>();
-        var toRemove = new List<long>();
-
-        foreach (var (id, list) in _trackedGames)
+        var games = new List<GameStatusTarget>(_trackedGames.Count);
+        foreach (var game in _trackedGames.Values)
         {
-            var hasLive = false;
-            for (var i = list.Count - 1; i >= 0; i--)
-            {
-                if (list[i].TryGetTarget(out var target))
-                {
-                    games.Add(target);
-                    hasLive = true;
-                }
-                else
-                {
-                    list.RemoveAt(i);
-                }
-            }
-
-            if (!hasLive)
-            {
-                toRemove.Add(id);
-            }
+            games.Add(game);
         }
 
-        foreach (var id in toRemove)
-        {
-            _trackedGames.Remove(id);
-        }
-
-        return new ReadOnlyCollection<GameViewModel>(games);
+        return new ReadOnlyCollection<GameStatusTarget>(games);
     }
 }

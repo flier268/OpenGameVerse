@@ -20,7 +20,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IMetadataService? _metadataService;
     private readonly IDialogService _dialogService;
     private readonly IAppSettingsService _settingsService;
-    private readonly GameStatusMonitorService _gameStatusMonitor;
+    private readonly GameStatusMonitorCoordinator _gameStatusMonitor;
 
     [ObservableProperty]
     public partial string Title { get; set; } = "OpenGameVerse - Game Library";
@@ -64,7 +64,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<string> CategoriesForAssignment { get; set; } = new();
 
-    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IAppSettingsService settingsService, GameStatusMonitorService gameStatusMonitor, IMetadataService? metadataService = null)
+    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IAppSettingsService settingsService, GameStatusMonitorCoordinator gameStatusMonitor, IMetadataService? metadataService = null)
     {
         _gameRepository = gameRepository;
         _categoryRepository = categoryRepository;
