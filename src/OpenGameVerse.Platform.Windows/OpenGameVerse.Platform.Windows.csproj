@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Gameloop.Vdf" Version="0.6.*" />
+    <PackageReference Include="Gameloop.Vdf" />
   </ItemGroup>
 
 </Project>
