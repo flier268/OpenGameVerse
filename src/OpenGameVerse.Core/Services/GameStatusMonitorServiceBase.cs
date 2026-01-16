@@ -15,9 +15,6 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
     private Task? _pollingTask;
     private int _isPolling;
 
-    protected static readonly Lock CmdlineCacheLock = new();
-    protected static readonly Dictionary<int, string?> CmdlineCache = new();
-
     private static readonly HashSet<string> NonGameProcessNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "steam",
@@ -50,7 +47,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
 
     protected GameStatusMonitorServiceBase(TimeSpan? interval = null)
     {
-        _interval = interval ?? TimeSpan.FromSeconds(1);
+        _interval = interval ?? TimeSpan.FromSeconds(3);
     }
 
     protected abstract StringComparison PathComparison { get; }
@@ -373,7 +370,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
 
     private bool IsSteamClientProcess(ProcessInfo process)
     {
-        var commandLine = process.GetCommandLine();
+        var commandLine = process.CommandLine;
         if (string.IsNullOrEmpty(process.Path) && string.IsNullOrEmpty(commandLine))
         {
             return false;
@@ -466,7 +463,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
             }
         }
 
-        var commandLine = process.GetCommandLine();
+        var commandLine = process.CommandLine;
         if (!string.IsNullOrEmpty(commandLine) && !string.IsNullOrWhiteSpace(appId))
         {
             if (commandLine.Contains(appId, PathComparison))
@@ -550,7 +547,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
             return true;
         }
 
-        var commandLine = process.GetCommandLine();
+        var commandLine = process.CommandLine;
         if (!string.IsNullOrEmpty(commandLine)
             && commandLine.Contains(normalizedExe, PathComparison))
         {
@@ -575,7 +572,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
             }
         }
 
-        var commandLine = process.GetCommandLine();
+        var commandLine = process.CommandLine;
         if (!string.IsNullOrEmpty(commandLine))
         {
             if (commandLine.Contains(appId, PathComparison)
@@ -601,7 +598,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
             return true;
         }
 
-        var commandLine = process.GetCommandLine();
+        var commandLine = process.CommandLine;
         if (!string.IsNullOrEmpty(commandLine)
             && commandLine.Contains(installPath, PathComparison))
         {
@@ -642,83 +639,20 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         return string.Equals(left, right, PathComparison);
     }
 
-    protected static void PruneCmdlineCache(HashSet<int> seenPids)
-    {
-        lock (CmdlineCacheLock)
-        {
-            if (CmdlineCache.Count == 0)
-            {
-                return;
-            }
-
-            var toRemove = new List<int>();
-            foreach (var pid in CmdlineCache.Keys)
-            {
-                if (!seenPids.Contains(pid))
-                {
-                    toRemove.Add(pid);
-                }
-            }
-
-            foreach (var pid in toRemove)
-            {
-                CmdlineCache.Remove(pid);
-            }
-        }
-    }
-
     protected sealed class ProcessInfo
     {
-        private readonly string? _cmdlinePath;
-
-        public ProcessInfo(int id, string? path, string? name, string? cmdlinePath = null)
+        public ProcessInfo(int id, string? path, string? name, string? commandLine = null)
         {
             Id = id;
             Path = path;
             Name = name;
-            _cmdlinePath = cmdlinePath;
+            CommandLine = commandLine;
         }
 
         public int Id { get; }
         public string? Path { get; }
         public string? Name { get; }
-
-        public string? GetCommandLine()
-        {
-            if (_cmdlinePath is null)
-            {
-                return null;
-            }
-
-            lock (CmdlineCacheLock)
-            {
-                if (CmdlineCache.TryGetValue(Id, out var cached))
-                {
-                    return cached;
-                }
-            }
-
-            var cmdline = TryReadCmdline(_cmdlinePath);
-            lock (CmdlineCacheLock)
-            {
-                CmdlineCache[Id] = cmdline;
-            }
-
-            return cmdline;
-        }
-    }
-
-    protected static string? TryReadCmdline(string path)
-    {
-        try
-        {
-            var data = File.ReadAllText(path);
-            return data.TrimEnd('\0');
-        }
-        catch
-        {
-            return null;
-        }
+        public string? CommandLine { get; }
     }
 
     private static bool IsNonGameProcess(ProcessInfo process)

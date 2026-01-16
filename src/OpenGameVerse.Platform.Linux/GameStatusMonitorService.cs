@@ -6,6 +6,10 @@ namespace OpenGameVerse.Platform.Linux;
 
 public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
 {
+    private const int ProcessCacheTtlTicks = 64;
+    private static readonly Lock ProcessCacheLock = new();
+    private static readonly Dictionary<(int Id, string Name), CachedProcessInfo> ProcessCache = new();
+
     public GameStatusMonitorService(TimeSpan? interval = null)
         : base(interval)
     {
@@ -48,30 +52,112 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
             return new ReadOnlyCollection<ProcessInfo>(list);
         }
 
-        var seen = new HashSet<int>();
+        DecayProcessCache();
         foreach (var process in Process.GetProcesses())
         {
-            string? path;
-            try
-            {
-                path = process.MainModule?.FileName;
-            }
-            catch
-            {
-                continue;
-            }
-
+            var (path, commandLine) = GetProcessData(process, procRoot);
             if (path is null)
             {
                 continue;
             }
 
-            seen.Add(process.Id);
-            var cmdlinePath = Path.Combine(procRoot, process.Id.ToString(), "cmdline");
-            list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, cmdlinePath));
+            list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, commandLine));
         }
 
-        PruneCmdlineCache(seen);
         return new ReadOnlyCollection<ProcessInfo>(list);
     }
+
+    private static (string? Path, string? CommandLine) GetProcessData(Process process, string procRoot)
+    {
+        var name = process.ProcessName ?? string.Empty;
+        var key = (process.Id, name);
+
+        lock (ProcessCacheLock)
+        {
+            if (ProcessCache.TryGetValue(key, out var cached))
+            {
+                return (cached.Path, cached.CommandLine);
+            }
+        }
+
+        string? path;
+        try
+        {
+            path = process.MainModule?.FileName;
+        }
+        catch
+        {
+            return (null, null);
+        }
+
+        var commandLine = TryReadCmdline(Path.Combine(procRoot, process.Id.ToString(), "cmdline"));
+
+        lock (ProcessCacheLock)
+        {
+            if (path is null && commandLine is null)
+            {
+                // 這個久久更新一次就好
+                ProcessCache[key] = new CachedProcessInfo(path, commandLine, 999);
+            }
+            else
+            {
+                // 將重取資料這件事分散在不同tick，降低資源佔用
+                ProcessCache[key] =
+                    new CachedProcessInfo(path, commandLine, Random.Shared.Next(1, ProcessCacheTtlTicks));
+            }
+        }
+
+        return (path, commandLine);
+    }
+
+    private static void DecayProcessCache()
+    {
+        lock (ProcessCacheLock)
+        {
+            if (ProcessCache.Count == 0)
+            {
+                return;
+            }
+
+            var toRemove = new List<(int Id, string Name)>();
+            var toUpdate = new List<((int Id, string Name) Key, CachedProcessInfo Value)>();
+            foreach (var (key, value) in ProcessCache)
+            {
+                var remaining = value.RemainingTicks - 1;
+                if (remaining <= 0)
+                {
+                    toRemove.Add(key);
+                }
+                else
+                {
+                    toUpdate.Add((key, value with { RemainingTicks = remaining }));
+                }
+            }
+
+            foreach (var key in toRemove)
+            {
+                ProcessCache.Remove(key);
+            }
+
+            foreach (var (key, value) in toUpdate)
+            {
+                ProcessCache[key] = value;
+            }
+        }
+    }
+
+    private static string? TryReadCmdline(string path)
+    {
+        try
+        {
+            var data = File.ReadAllText(path);
+            return data.TrimEnd('\0');
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private sealed record CachedProcessInfo(string? Path, string? CommandLine, int RemainingTicks);
 }
