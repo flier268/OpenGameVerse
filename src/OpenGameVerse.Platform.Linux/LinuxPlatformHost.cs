@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Common;
 using OpenGameVerse.Core.Models;
@@ -8,22 +9,17 @@ namespace OpenGameVerse.Platform.Linux;
 /// <summary>
 /// Linux platform host implementation
 /// </summary>
+[SupportedOSPlatform("linux")]
 public sealed class LinuxPlatformHost : IPlatformHost
 {
     public PlatformType Platform => PlatformType.Linux;
 
-    private readonly IProcessLauncher _processLauncher;
-    private readonly List<IGameScanner> _scanners;
-
-    public LinuxPlatformHost()
-    {
-        _processLauncher = new LinuxProcessLauncher();
-        _scanners = new List<IGameScanner>
-        {
-            new SteamScanner(),
-            new DesktopFileScanner()
-        };
-    }
+    private readonly LinuxProcessLauncher _processLauncher = new();
+    private readonly List<IGameScanner> _scanners =
+    [
+        new SteamScanner(),
+        new DesktopFileScanner()
+    ];
 
     public IEnumerable<IGameScanner> GetScanners()
     {
