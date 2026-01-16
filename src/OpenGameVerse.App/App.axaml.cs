@@ -10,12 +10,8 @@ using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
 using OpenGameVerse.Metadata.Abstractions;
 using OpenGameVerse.Metadata.Services;
-
-#if WINDOWS
 using OpenGameVerse.Platform.Windows;
-#else
 using OpenGameVerse.Platform.Linux;
-#endif
 
 namespace OpenGameVerse.App;
 

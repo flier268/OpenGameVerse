@@ -44,7 +44,7 @@
     <ProjectReference Include="..\OpenGameVerse.Core\OpenGameVerse.Core.csproj" />
     <ProjectReference Include="..\OpenGameVerse.Data\OpenGameVerse.Data.csproj" />
     <ProjectReference Include="..\OpenGameVerse.Metadata\OpenGameVerse.Metadata.csproj" />
-    <ProjectReference Include="..\OpenGameVerse.Platform.Windows\OpenGameVerse.Platform.Windows.csproj" Condition="'$(OS)' == 'Windows_NT'" />
-    <ProjectReference Include="..\OpenGameVerse.Platform.Linux\OpenGameVerse.Platform.Linux.csproj" Condition="'$(OS)' != 'Windows_NT'" />
+    <ProjectReference Include="..\OpenGameVerse.Platform.Windows\OpenGameVerse.Platform.Windows.csproj" />
+    <ProjectReference Include="..\OpenGameVerse.Platform.Linux\OpenGameVerse.Platform.Linux.csproj" />
   </ItemGroup>
 </Project>
