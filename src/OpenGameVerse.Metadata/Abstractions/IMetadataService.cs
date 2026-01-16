@@ -23,5 +23,8 @@ public interface IMetadataService
     /// <param name="metadata">Game metadata with cover URL</param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>Local path to cached cover image</returns>
-    Task<Result<string>> DownloadCoverArtAsync(GameMetadata metadata, CancellationToken ct = default);
+    Task<Result<string>> DownloadCoverArtAsync(
+        GameMetadata metadata,
+        CancellationToken ct = default
+    );
 }

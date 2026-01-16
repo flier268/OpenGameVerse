@@ -3,18 +3,18 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using OpenGameVerse.App.Services;
 using OpenGameVerse.App.ViewModels;
 using OpenGameVerse.App.Views;
-using OpenGameVerse.App.Services;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
 using OpenGameVerse.Metadata.Abstractions;
 using OpenGameVerse.Metadata.Services;
-using OpenGameVerse.Platform.Windows;
 using OpenGameVerse.Platform.Linux;
-using WindowsGameStatusMonitorService = OpenGameVerse.Platform.Windows.GameStatusMonitorService;
+using OpenGameVerse.Platform.Windows;
 using LinuxGameStatusMonitorService = OpenGameVerse.Platform.Linux.GameStatusMonitorService;
+using WindowsGameStatusMonitorService = OpenGameVerse.Platform.Windows.GameStatusMonitorService;
 
 namespace OpenGameVerse.App;
 
@@ -42,7 +42,9 @@ public partial class App : Application
         // Database
         var dbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "OpenGameVerse", "opengameverse.db");
+            "OpenGameVerse",
+            "opengameverse.db"
+        );
 
         var connectionString = $"Data Source={dbPath};Cache=Shared;Mode=ReadWriteCreate";
 
@@ -58,7 +60,7 @@ public partial class App : Application
             _platformHost = new WindowsPlatformHost();
             _gameStatusMonitorService = new WindowsGameStatusMonitorService();
         }
-        else if(OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsLinux())
         {
             _platformHost = new LinuxPlatformHost();
             _gameStatusMonitorService = new LinuxGameStatusMonitorService();
@@ -79,7 +81,9 @@ public partial class App : Application
 
             var cacheDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "OpenGameVerse", "covers");
+                "OpenGameVerse",
+                "covers"
+            );
 
             var imageCache = new ImageCache(cacheDir);
             _metadataService = new MetadataService(igdbClient, imageCache);
@@ -91,7 +95,9 @@ public partial class App : Application
         // App settings
         var settingsPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "OpenGameVerse", "settings.json");
+            "OpenGameVerse",
+            "settings.json"
+        );
 
         var startupService = new StartupService();
         _settingsService = new AppSettingsService(settingsPath, startupService);
@@ -110,7 +116,8 @@ public partial class App : Application
 
             _gameStatusMonitorCoordinator = new GameStatusMonitorCoordinator(
                 _gameStatusMonitorService!,
-                SynchronizationContext.Current);
+                SynchronizationContext.Current
+            );
             _gameStatusMonitorCoordinator.Start();
 
             var viewModel = new MainWindowViewModel(
@@ -120,20 +127,23 @@ public partial class App : Application
                 _dialogService!,
                 _settingsService!,
                 _gameStatusMonitorCoordinator,
-                _metadataService);
+                _metadataService
+            );
 
             mainWindow.DataContext = viewModel;
             desktop.MainWindow = mainWindow;
 
             _trayIconService = new TrayIconService(
                 mainWindow,
-                () => _windowBehaviorService?.RequestExit());
+                () => _windowBehaviorService?.RequestExit()
+            );
             _trayIconService.UpdateSettings(_settingsService!.CurrentSettings);
 
             _windowBehaviorService = new WindowBehaviorService(
                 mainWindow,
                 _settingsService!,
-                _trayIconService);
+                _trayIconService
+            );
 
             // Initialize after window is created
             _ = viewModel.InitializeAsync();
@@ -144,7 +154,10 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ApplyStartupWindowBehavior(Window mainWindow, OpenGameVerse.Core.Models.AppSettings settings)
+    private void ApplyStartupWindowBehavior(
+        Window mainWindow,
+        OpenGameVerse.Core.Models.AppSettings settings
+    )
     {
         if (settings.StartInFullscreen)
         {
@@ -154,12 +167,10 @@ public partial class App : Application
                 mainWindow,
                 _settingsService!,
                 _gameStatusMonitorCoordinator!,
-                _metadataService);
+                _metadataService
+            );
 
-            var fullscreenWindow = new FullscreenWindow
-            {
-                DataContext = fullscreenViewModel
-            };
+            var fullscreenWindow = new FullscreenWindow { DataContext = fullscreenViewModel };
 
             fullscreenWindow.Closed += (_, _) => mainWindow.Show();
             mainWindow.Hide();

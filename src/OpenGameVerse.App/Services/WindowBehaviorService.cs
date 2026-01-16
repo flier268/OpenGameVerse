@@ -14,7 +14,8 @@ public sealed class WindowBehaviorService
     public WindowBehaviorService(
         Window mainWindow,
         IAppSettingsService settingsService,
-        TrayIconService trayIconService)
+        TrayIconService trayIconService
+    )
     {
         _mainWindow = mainWindow;
         _settingsService = settingsService;

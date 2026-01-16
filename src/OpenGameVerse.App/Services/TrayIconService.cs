@@ -55,7 +55,9 @@ public sealed class TrayIconService : IDisposable
 
     private void InitializeTrayIcon()
     {
-        var icon = new WindowIcon(AssetLoader.Open(new Uri("avares://OpenGameVerse.App/Assets/opengameverse-icon.png")));
+        var icon = new WindowIcon(
+            AssetLoader.Open(new Uri("avares://OpenGameVerse.App/Assets/opengameverse-icon.png"))
+        );
 
         var menu = new NativeMenu();
         var openItem = new NativeMenuItem("顯示 OpenGameVerse");
@@ -73,7 +75,7 @@ public sealed class TrayIconService : IDisposable
             Icon = icon,
             ToolTipText = "OpenGameVerse",
             Menu = menu,
-            IsVisible = false
+            IsVisible = false,
         };
     }
 
@@ -84,7 +86,7 @@ public sealed class TrayIconService : IDisposable
             TrayIconStyle.Gamepad => "OpenGameVerse",
             TrayIconStyle.Default => "OpenGameVerse",
             TrayIconStyle.Minimal => "OpenGameVerse (Minimal)",
-            _ => "OpenGameVerse"
+            _ => "OpenGameVerse",
         };
     }
 }

@@ -19,5 +19,6 @@ public interface IProcessLauncher
         string target,
         string? arguments = null,
         Dictionary<string, string>? environmentVariables = null,
-        CancellationToken ct = default);
+        CancellationToken ct = default
+    );
 }

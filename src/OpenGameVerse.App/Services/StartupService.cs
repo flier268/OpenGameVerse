@@ -62,7 +62,8 @@ public sealed class StartupService : IStartupService
 
         var autostartDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "autostart");
+            "autostart"
+        );
         var desktopFile = Path.Combine(autostartDir, "OpenGameVerse.desktop");
 
         if (!enable)
@@ -77,15 +78,18 @@ public sealed class StartupService : IStartupService
 
         Directory.CreateDirectory(autostartDir);
 
-        var content = string.Join('\n', new[]
-        {
-            "[Desktop Entry]",
-            "Type=Application",
-            "Name=OpenGameVerse",
-            $"Exec=\"{exePath}\"",
-            "X-GNOME-Autostart-enabled=true",
-            "NoDisplay=false"
-        });
+        var content = string.Join(
+            '\n',
+            new[]
+            {
+                "[Desktop Entry]",
+                "Type=Application",
+                "Name=OpenGameVerse",
+                $"Exec=\"{exePath}\"",
+                "X-GNOME-Autostart-enabled=true",
+                "NoDisplay=false",
+            }
+        );
 
         File.WriteAllText(desktopFile, content);
     }

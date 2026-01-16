@@ -1,5 +1,5 @@
-using OpenGameVerse.Platform.Linux.Models;
 using System.Runtime.Versioning;
+using OpenGameVerse.Platform.Linux.Models;
 
 namespace OpenGameVerse.Platform.Linux.Parsers;
 
@@ -47,7 +47,10 @@ public static class DesktopFileParser
                 // Check for section headers
                 if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
                 {
-                    inDesktopEntry = trimmed.Equals("[Desktop Entry]", StringComparison.OrdinalIgnoreCase);
+                    inDesktopEntry = trimmed.Equals(
+                        "[Desktop Entry]",
+                        StringComparison.OrdinalIgnoreCase
+                    );
                     continue;
                 }
 
@@ -113,7 +116,7 @@ public static class DesktopFileParser
                 Path = path,
                 Categories = categories,
                 IsGame = isGame,
-                Comment = comment
+                Comment = comment,
             };
         }
         catch
@@ -134,7 +137,22 @@ public static class DesktopFileParser
         }
 
         // Common field codes to remove (from freedesktop.org spec)
-        string[] fieldCodes = { "%f", "%F", "%u", "%U", "%d", "%D", "%n", "%N", "%i", "%c", "%k", "%v", "%m" };
+        string[] fieldCodes =
+        {
+            "%f",
+            "%F",
+            "%u",
+            "%U",
+            "%d",
+            "%D",
+            "%n",
+            "%N",
+            "%i",
+            "%c",
+            "%k",
+            "%v",
+            "%m",
+        };
 
         var cleaned = exec;
 

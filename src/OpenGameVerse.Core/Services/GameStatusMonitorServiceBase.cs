@@ -15,7 +15,9 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
     private Task? _pollingTask;
     private int _isPolling;
 
-    private static readonly HashSet<string> NonGameProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> NonGameProcessNames = new(
+        StringComparer.OrdinalIgnoreCase
+    )
     {
         "steam",
         "steamwebhelper",
@@ -40,7 +42,7 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         "kwin_wayland",
         "xorg",
         "xwayland",
-        "xdg-open"
+        "xdg-open",
     };
 
     public event Action<long, bool>? GameStatusChanged;
@@ -380,9 +382,9 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         var cmd = commandLine ?? string.Empty;
 
         return path.Contains("steam.exe", PathComparison)
-               || path.Contains("steamwebhelper", PathComparison)
-               || cmd.Contains("steam.exe", PathComparison)
-               || cmd.Contains("steamwebhelper", PathComparison);
+            || path.Contains("steamwebhelper", PathComparison)
+            || cmd.Contains("steam.exe", PathComparison)
+            || cmd.Contains("steamwebhelper", PathComparison);
     }
 
     private static string? GetSteamAppId(GameStatusTarget game)
@@ -429,7 +431,10 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         }
 
         var remaining = installPath[(index + marker.Length)..];
-        var parts = remaining.Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+        var parts = remaining.Split(
+            Path.DirectorySeparatorChar,
+            StringSplitOptions.RemoveEmptyEntries
+        );
         return parts.Length > 0 ? parts[0] : null;
     }
 
@@ -453,7 +458,11 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         return IsFlatpakAppProcess(process, appId, Array.Empty<string>());
     }
 
-    private bool IsFlatpakAppProcess(ProcessInfo process, string? appId, IReadOnlyCollection<string> processNames)
+    private bool IsFlatpakAppProcess(
+        ProcessInfo process,
+        string? appId,
+        IReadOnlyCollection<string> processNames
+    )
     {
         if (string.IsNullOrWhiteSpace(appId))
         {
@@ -490,8 +499,10 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
                 {
                     if (string.Equals(name, candidate, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (!string.IsNullOrEmpty(process.Path)
-                            && process.Path.StartsWith("/app/", StringComparison.Ordinal))
+                        if (
+                            !string.IsNullOrEmpty(process.Path)
+                            && process.Path.StartsWith("/app/", StringComparison.Ordinal)
+                        )
                         {
                             return true;
                         }
@@ -508,7 +519,9 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         var names = new List<string>();
         if (!string.IsNullOrWhiteSpace(appId))
         {
-            var lastSegment = appId.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            var lastSegment = appId
+                .Split('.', StringSplitOptions.RemoveEmptyEntries)
+                .LastOrDefault();
             if (!string.IsNullOrWhiteSpace(lastSegment))
             {
                 names.Add(lastSegment);
@@ -548,8 +561,10 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         }
 
         var commandLine = process.CommandLine;
-        if (!string.IsNullOrEmpty(commandLine)
-            && commandLine.Contains(normalizedExe, PathComparison))
+        if (
+            !string.IsNullOrEmpty(commandLine)
+            && commandLine.Contains(normalizedExe, PathComparison)
+        )
         {
             return true;
         }
@@ -575,8 +590,10 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         var commandLine = process.CommandLine;
         if (!string.IsNullOrEmpty(commandLine))
         {
-            if (commandLine.Contains(appId, PathComparison)
-                && commandLine.Contains("steamapps", PathComparison))
+            if (
+                commandLine.Contains(appId, PathComparison)
+                && commandLine.Contains("steamapps", PathComparison)
+            )
             {
                 return true;
             }
@@ -592,15 +609,16 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
 
     private bool PathContains(ProcessInfo process, string installPath)
     {
-        if (!string.IsNullOrEmpty(process.Path)
-            && process.Path.StartsWith(installPath, PathComparison))
+        if (
+            !string.IsNullOrEmpty(process.Path)
+            && process.Path.StartsWith(installPath, PathComparison)
+        )
         {
             return true;
         }
 
         var commandLine = process.CommandLine;
-        if (!string.IsNullOrEmpty(commandLine)
-            && commandLine.Contains(installPath, PathComparison))
+        if (!string.IsNullOrEmpty(commandLine) && commandLine.Contains(installPath, PathComparison))
         {
             return true;
         }
@@ -608,8 +626,10 @@ public abstract class GameStatusMonitorServiceBase : IGameStatusMonitorService
         if (IncludeWinePath)
         {
             var winePath = "Z:" + installPath.Replace('/', '\\');
-            if (!string.IsNullOrEmpty(commandLine)
-                && commandLine.Contains(winePath, StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.IsNullOrEmpty(commandLine)
+                && commandLine.Contains(winePath, StringComparison.OrdinalIgnoreCase)
+            )
             {
                 return true;
             }

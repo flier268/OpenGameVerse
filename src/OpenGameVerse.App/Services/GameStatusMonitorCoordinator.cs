@@ -14,9 +14,11 @@ public sealed class GameStatusMonitorCoordinator : IDisposable
 
     public GameStatusMonitorCoordinator(
         IGameStatusMonitorService platformMonitor,
-        SynchronizationContext? uiContext = null)
+        SynchronizationContext? uiContext = null
+    )
     {
-        _platformMonitor = platformMonitor ?? throw new ArgumentNullException(nameof(platformMonitor));
+        _platformMonitor =
+            platformMonitor ?? throw new ArgumentNullException(nameof(platformMonitor));
         _uiContext = uiContext;
         _platformMonitor.GameStatusChanged += OnGameStatusChanged;
     }
@@ -33,7 +35,11 @@ public sealed class GameStatusMonitorCoordinator : IDisposable
                     _trackedGames[game.Id] = list;
                 }
 
-                if (!list.Any(reference => reference.TryGetTarget(out var target) && ReferenceEquals(target, game)))
+                if (
+                    !list.Any(reference =>
+                        reference.TryGetTarget(out var target) && ReferenceEquals(target, game)
+                    )
+                )
                 {
                     list.Add(new WeakReference<GameViewModel>(game));
                 }
@@ -151,6 +157,7 @@ public sealed class GameStatusMonitorCoordinator : IDisposable
             game.Title,
             game.ExecutablePath,
             game.InstallPath,
-            game.PlatformId);
+            game.PlatformId
+        );
     }
 }

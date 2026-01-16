@@ -3,9 +3,9 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OpenGameVerse.App.Services;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
-using OpenGameVerse.App.Services;
 using Dispatcher = Avalonia.Threading.Dispatcher;
 
 namespace OpenGameVerse.App.ViewModels;
@@ -28,7 +28,11 @@ public partial class CategoryManagerViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
 
-    public CategoryManagerViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IDialogService dialogService)
+    public CategoryManagerViewModel(
+        IGameRepository gameRepository,
+        ICategoryRepository categoryRepository,
+        IDialogService dialogService
+    )
     {
         _gameRepository = gameRepository;
         _categoryRepository = categoryRepository;
@@ -50,7 +54,11 @@ public partial class CategoryManagerViewModel : ViewModelBase
 
             // Load all categories from the repository
             var categoryList = new List<CategoryInfo>();
-            await foreach (var (name, gameCount) in _categoryRepository.GetAllCategoriesAsync(CancellationToken.None).ConfigureAwait(false))
+            await foreach (
+                var (name, gameCount) in _categoryRepository
+                    .GetAllCategoriesAsync(CancellationToken.None)
+                    .ConfigureAwait(false)
+            )
             {
                 categoryList.Add(new CategoryInfo { Name = name, Count = gameCount });
             }
@@ -94,26 +102,35 @@ public partial class CategoryManagerViewModel : ViewModelBase
 
             // Move all games in this category to uncategorized (off UI thread)
             await Task.Run(async () =>
-            {
-                var gamesToUpdate = new List<Game>();
-                await foreach (var game in _gameRepository.GetAllGamesAsync(CancellationToken.None).ConfigureAwait(false))
                 {
-                    if (game.CustomCategory == categoryName)
+                    var gamesToUpdate = new List<Game>();
+                    await foreach (
+                        var game in _gameRepository
+                            .GetAllGamesAsync(CancellationToken.None)
+                            .ConfigureAwait(false)
+                    )
                     {
-                        gamesToUpdate.Add(game);
+                        if (game.CustomCategory == categoryName)
+                        {
+                            gamesToUpdate.Add(game);
+                        }
                     }
-                }
 
-                // Update games in batch
-                foreach (var game in gamesToUpdate)
-                {
-                    game.CustomCategory = null;
-                    await _gameRepository.UpdateGameAsync(game, CancellationToken.None).ConfigureAwait(false);
-                }
+                    // Update games in batch
+                    foreach (var game in gamesToUpdate)
+                    {
+                        game.CustomCategory = null;
+                        await _gameRepository
+                            .UpdateGameAsync(game, CancellationToken.None)
+                            .ConfigureAwait(false);
+                    }
 
-                // Delete the category from the repository
-                await _categoryRepository.DeleteCategoryAsync(categoryName, CancellationToken.None).ConfigureAwait(false);
-            }).ConfigureAwait(false);
+                    // Delete the category from the repository
+                    await _categoryRepository
+                        .DeleteCategoryAsync(categoryName, CancellationToken.None)
+                        .ConfigureAwait(false);
+                })
+                .ConfigureAwait(false);
 
             // Clear selection
             SelectedCategory = null;
@@ -161,7 +178,10 @@ public partial class CategoryManagerViewModel : ViewModelBase
         try
         {
             // Add category to database
-            var success = await _categoryRepository.AddCategoryAsync(categoryName, CancellationToken.None);
+            var success = await _categoryRepository.AddCategoryAsync(
+                categoryName,
+                CancellationToken.None
+            );
 
             if (success && !Categories.Any(c => c.Name == categoryName))
             {

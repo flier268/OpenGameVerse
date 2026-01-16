@@ -19,7 +19,10 @@ public sealed class MetadataService : IMetadataService
         _imageCache = imageCache ?? throw new ArgumentNullException(nameof(imageCache));
     }
 
-    public async Task<Result<GameMetadata?>> EnrichGameAsync(Game game, CancellationToken ct = default)
+    public async Task<Result<GameMetadata?>> EnrichGameAsync(
+        Game game,
+        CancellationToken ct = default
+    )
     {
         try
         {
@@ -38,7 +41,11 @@ public sealed class MetadataService : IMetadataService
             // Search by title
             var searchResult = await _igdbClient.SearchGamesAsync(game.Title, limit: 5, ct);
 
-            if (!searchResult.IsSuccess || searchResult.Value == null || searchResult.Value.Length == 0)
+            if (
+                !searchResult.IsSuccess
+                || searchResult.Value == null
+                || searchResult.Value.Length == 0
+            )
             {
                 return Result<GameMetadata?>.Success(null);
             }
@@ -58,7 +65,10 @@ public sealed class MetadataService : IMetadataService
         }
     }
 
-    public async Task<Result<string>> DownloadCoverArtAsync(GameMetadata metadata, CancellationToken ct = default)
+    public async Task<Result<string>> DownloadCoverArtAsync(
+        GameMetadata metadata,
+        CancellationToken ct = default
+    )
     {
         try
         {
@@ -85,7 +95,11 @@ public sealed class MetadataService : IMetadataService
             }
 
             // Cache and process
-            var cacheResult = await _imageCache.CacheImageAsync(downloadResult.Value!, fileName, ct);
+            var cacheResult = await _imageCache.CacheImageAsync(
+                downloadResult.Value!,
+                fileName,
+                ct
+            );
 
             if (!cacheResult.IsSuccess)
             {
@@ -111,18 +125,24 @@ public sealed class MetadataService : IMetadataService
             Summary = igdbGame.Summary,
             Rating = igdbGame.Rating,
             RatingCount = igdbGame.RatingCount,
-            IgdbUrl = igdbGame.Url
+            IgdbUrl = igdbGame.Url,
         };
 
         if (igdbGame.FirstReleaseDate.HasValue)
         {
-            metadata.ReleaseDate = DateTimeOffset.FromUnixTimeSeconds(igdbGame.FirstReleaseDate.Value).DateTime;
+            metadata.ReleaseDate = DateTimeOffset
+                .FromUnixTimeSeconds(igdbGame.FirstReleaseDate.Value)
+                .DateTime;
         }
 
         return metadata;
     }
 
-    private async Task PopulateCoverAsync(IgdbGame igdbGame, GameMetadata metadata, CancellationToken ct)
+    private async Task PopulateCoverAsync(
+        IgdbGame igdbGame,
+        GameMetadata metadata,
+        CancellationToken ct
+    )
     {
         if (!igdbGame.Cover.HasValue)
         {

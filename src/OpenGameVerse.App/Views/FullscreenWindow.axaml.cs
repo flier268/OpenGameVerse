@@ -94,7 +94,12 @@ public partial class FullscreenWindow : SukiWindow
                     e.Handled = true;
                     break;
                 }
-                if (FocusManager?.GetFocusedElement() is Border { DataContext: GameViewModel gameVm })
+                if (
+                    FocusManager?.GetFocusedElement() is Border
+                    {
+                        DataContext: GameViewModel gameVm
+                    }
+                )
                 {
                     if (DataContext is FullscreenViewModel vm3)
                     {
@@ -230,7 +235,11 @@ public partial class FullscreenWindow : SukiWindow
         }
     }
 
-    private Border? FindNextTile(NavigationDirection direction, TileInfo current, IReadOnlyList<TileInfo> tiles)
+    private Border? FindNextTile(
+        NavigationDirection direction,
+        TileInfo current,
+        IReadOnlyList<TileInfo> tiles
+    )
     {
         var rowTolerance = current.Size.Height * 0.6;
         var columnTolerance = current.Size.Width * 0.6;
@@ -278,11 +287,16 @@ public partial class FullscreenWindow : SukiWindow
             NavigationDirection.Left => FindWrapTile(current, tiles, rowTolerance, false),
             NavigationDirection.Down => FindWrapTileVertical(current, tiles, columnTolerance, true),
             NavigationDirection.Up => FindWrapTileVertical(current, tiles, columnTolerance, false),
-            _ => null
+            _ => null,
         };
     }
 
-    private Border? FindWrapTile(TileInfo current, IReadOnlyList<TileInfo> tiles, double rowTolerance, bool forward)
+    private Border? FindWrapTile(
+        TileInfo current,
+        IReadOnlyList<TileInfo> tiles,
+        double rowTolerance,
+        bool forward
+    )
     {
         var sameRow = tiles
             .Where(tile => Math.Abs(tile.Center.Y - current.Center.Y) <= rowTolerance)
@@ -298,7 +312,12 @@ public partial class FullscreenWindow : SukiWindow
         return forward ? ordered.First().Tile : ordered.Last().Tile;
     }
 
-    private Border? FindWrapTileVertical(TileInfo current, IReadOnlyList<TileInfo> tiles, double columnTolerance, bool forward)
+    private Border? FindWrapTileVertical(
+        TileInfo current,
+        IReadOnlyList<TileInfo> tiles,
+        double columnTolerance,
+        bool forward
+    )
     {
         var sameColumn = tiles
             .Where(tile => Math.Abs(tile.Center.X - current.Center.X) <= columnTolerance)
@@ -346,7 +365,10 @@ public partial class FullscreenWindow : SukiWindow
             .Select(tile =>
             {
                 var origin = tile.TranslatePoint(new Avalonia.Point(0, 0), grid) ?? default;
-                var center = new Avalonia.Point(origin.X + tile.Bounds.Width / 2, origin.Y + tile.Bounds.Height / 2);
+                var center = new Avalonia.Point(
+                    origin.X + tile.Bounds.Width / 2,
+                    origin.Y + tile.Bounds.Height / 2
+                );
                 return new TileInfo(tile, center, tile.Bounds.Size);
             })
             .ToList();

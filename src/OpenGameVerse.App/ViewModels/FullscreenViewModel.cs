@@ -4,10 +4,10 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OpenGameVerse.App.Services;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Metadata.Abstractions;
-using OpenGameVerse.App.Services;
 
 namespace OpenGameVerse.App.ViewModels;
 
@@ -38,7 +38,8 @@ public partial class FullscreenViewModel : ViewModelBase
         Window parentWindow,
         IAppSettingsService settingsService,
         GameStatusMonitorCoordinator gameStatusMonitor,
-        IMetadataService? metadataService = null)
+        IMetadataService? metadataService = null
+    )
     {
         _gameRepository = gameRepository;
         _platformHost = platformHost;
@@ -73,7 +74,10 @@ public partial class FullscreenViewModel : ViewModelBase
                 Games.Add(gameVm);
 
                 // Enrich with metadata if available (fire and forget)
-                if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
+                if (
+                    _metadataService != null
+                    && _settingsService.CurrentSettings.DownloadMetadataAfterImport
+                )
                 {
                     _ = EnrichGameMetadataAsync(game, gameVm);
                 }
@@ -92,7 +96,8 @@ public partial class FullscreenViewModel : ViewModelBase
     [RelayCommand]
     private async Task ScanGamesAsync()
     {
-        if (IsScanning) return;
+        if (IsScanning)
+            return;
 
         try
         {
@@ -120,28 +125,44 @@ public partial class FullscreenViewModel : ViewModelBase
 
                     // Check if game already exists
                     var existingResult = await _gameRepository.GetGameByPathAsync(
-                        gameInstallation.InstallPath, CancellationToken.None);
+                        gameInstallation.InstallPath,
+                        CancellationToken.None
+                    );
 
                     if (existingResult.IsSuccess && existingResult.Value != null)
                     {
                         var existingGame = existingResult.Value;
-                        if (!string.IsNullOrWhiteSpace(gameInstallation.PlatformId)
-                            && string.IsNullOrWhiteSpace(existingGame.PlatformId))
+                        if (
+                            !string.IsNullOrWhiteSpace(gameInstallation.PlatformId)
+                            && string.IsNullOrWhiteSpace(existingGame.PlatformId)
+                        )
                         {
                             existingGame.PlatformId = gameInstallation.PlatformId;
-                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                            await _gameRepository.UpdateGameAsync(
+                                existingGame,
+                                CancellationToken.None
+                            );
                         }
                         if (!string.IsNullOrWhiteSpace(gameInstallation.CoverImagePath))
                         {
-                            var needsCover = string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
+                            var needsCover =
+                                string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
                                 || !File.Exists(existingGame.CoverImagePath);
                             if (needsCover)
                             {
                                 existingGame.CoverImagePath = gameInstallation.CoverImagePath;
-                                await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                                await _gameRepository.UpdateGameAsync(
+                                    existingGame,
+                                    CancellationToken.None
+                                );
 
                                 var existingVm = Games.FirstOrDefault(vm =>
-                                    string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                                    string.Equals(
+                                        vm.InstallPath,
+                                        existingGame.InstallPath,
+                                        StringComparison.OrdinalIgnoreCase
+                                    )
+                                );
                                 if (existingVm != null)
                                 {
                                     existingVm.CoverImagePath = gameInstallation.CoverImagePath;
@@ -149,14 +170,24 @@ public partial class FullscreenViewModel : ViewModelBase
                             }
                         }
 
-                        if (_settingsService.CurrentSettings.UpdateInstallSizeOnLibraryUpdate
-                            && existingGame.SizeBytes != gameInstallation.SizeBytes)
+                        if (
+                            _settingsService.CurrentSettings.UpdateInstallSizeOnLibraryUpdate
+                            && existingGame.SizeBytes != gameInstallation.SizeBytes
+                        )
                         {
                             existingGame.SizeBytes = gameInstallation.SizeBytes;
-                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                            await _gameRepository.UpdateGameAsync(
+                                existingGame,
+                                CancellationToken.None
+                            );
 
                             var existingVm = Games.FirstOrDefault(vm =>
-                                string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                                string.Equals(
+                                    vm.InstallPath,
+                                    existingGame.InstallPath,
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            );
                             if (existingVm != null)
                             {
                                 existingVm.SizeBytes = gameInstallation.SizeBytes;
@@ -179,7 +210,7 @@ public partial class FullscreenViewModel : ViewModelBase
                         CoverImagePath = gameInstallation.CoverImagePath,
                         SizeBytes = gameInstallation.SizeBytes,
                         DiscoveredAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
+                        UpdatedAt = DateTime.UtcNow,
                     };
 
                     var result = await _gameRepository.AddGameAsync(game, CancellationToken.None);
@@ -191,7 +222,10 @@ public partial class FullscreenViewModel : ViewModelBase
                         var gameVm = GameViewModel.FromModel(game);
                         Games.Add(gameVm);
 
-                        if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
+                        if (
+                            _metadataService != null
+                            && _settingsService.CurrentSettings.DownloadMetadataAfterImport
+                        )
                         {
                             _ = EnrichGameMetadataAsync(game, gameVm);
                         }
@@ -223,7 +257,10 @@ public partial class FullscreenViewModel : ViewModelBase
     [RelayCommand]
     private void ExitFullscreen()
     {
-        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (
+            Avalonia.Application.Current?.ApplicationLifetime
+            is IClassicDesktopStyleApplicationLifetime desktop
+        )
         {
             // Close fullscreen window and show main window
             _parentWindow.Show();
@@ -248,7 +285,10 @@ public partial class FullscreenViewModel : ViewModelBase
             StatusMessage = $"Launching {gameViewModel.Title}...";
 
             // Get full game data from repository
-            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+            var gameResult = await _gameRepository.GetGameByIdAsync(
+                gameViewModel.Id,
+                CancellationToken.None
+            );
 
             if (!gameResult.IsSuccess || gameResult.Value == null)
             {
@@ -266,17 +306,23 @@ public partial class FullscreenViewModel : ViewModelBase
                 Platform = game.Platform,
                 ExecutablePath = game.ExecutablePath,
                 IconPath = game.IconPath,
-                SizeBytes = game.SizeBytes
+                SizeBytes = game.SizeBytes,
             };
 
             // Launch through platform host
-            var launchResult = await _platformHost.LaunchGameAsync(installation, CancellationToken.None);
+            var launchResult = await _platformHost.LaunchGameAsync(
+                installation,
+                CancellationToken.None
+            );
 
             if (launchResult.IsSuccess)
             {
                 var settings = _settingsService.CurrentSettings;
                 var fullscreenWindow = GetFullscreenWindow();
-                var didChangeWindow = ApplyLaunchAction(fullscreenWindow, settings.GameLaunchAction);
+                var didChangeWindow = ApplyLaunchAction(
+                    fullscreenWindow,
+                    settings.GameLaunchAction
+                );
 
                 var process = launchResult.Value;
                 if (process != null)
@@ -290,7 +336,10 @@ public partial class FullscreenViewModel : ViewModelBase
                             return;
                         }
 
-                        if (settings.GameCloseAction == GameCloseAction.RestoreWhenLaunchedFromUi && !didChangeWindow)
+                        if (
+                            settings.GameCloseAction == GameCloseAction.RestoreWhenLaunchedFromUi
+                            && !didChangeWindow
+                        )
                         {
                             return;
                         }
@@ -300,7 +349,12 @@ public partial class FullscreenViewModel : ViewModelBase
                 }
                 else
                 {
-                    _ = MonitorGameExitAsync(game.Id, fullscreenWindow, didChangeWindow, settings.GameCloseAction);
+                    _ = MonitorGameExitAsync(
+                        game.Id,
+                        fullscreenWindow,
+                        didChangeWindow,
+                        settings.GameCloseAction
+                    );
                 }
 
                 // Update last played
@@ -331,11 +385,15 @@ public partial class FullscreenViewModel : ViewModelBase
             }
 
             StatusMessage = $"Stopping {gameViewModel.Title}...";
-            var stopped = await _gameStatusMonitor.StopGameAsync(gameViewModel, CancellationToken.None);
+            var stopped = await _gameStatusMonitor.StopGameAsync(
+                gameViewModel,
+                CancellationToken.None
+            );
 
-            StatusMessage = stopped > 0
-                ? $"Stopped {gameViewModel.Title}"
-                : $"No running process found for {gameViewModel.Title}";
+            StatusMessage =
+                stopped > 0
+                    ? $"Stopped {gameViewModel.Title}"
+                    : $"No running process found for {gameViewModel.Title}";
         }
         catch (Exception ex)
         {
@@ -345,7 +403,10 @@ public partial class FullscreenViewModel : ViewModelBase
 
     private static Window? GetFullscreenWindow()
     {
-        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (
+            Avalonia.Application.Current?.ApplicationLifetime
+            is IClassicDesktopStyleApplicationLifetime desktop
+        )
         {
             foreach (var window in desktop.Windows)
             {
@@ -392,7 +453,12 @@ public partial class FullscreenViewModel : ViewModelBase
         window.Activate();
     }
 
-    private async Task MonitorGameExitAsync(long gameId, Window? window, bool didChangeWindow, GameCloseAction closeAction)
+    private async Task MonitorGameExitAsync(
+        long gameId,
+        Window? window,
+        bool didChangeWindow,
+        GameCloseAction closeAction
+    )
     {
         if (closeAction == GameCloseAction.KeepMinimized)
         {
@@ -410,18 +476,20 @@ public partial class FullscreenViewModel : ViewModelBase
             await _gameStatusMonitor.WaitForGameExitAsync(gameId, cts.Token);
             Dispatcher.UIThread.Post(() => RestoreWindow(window));
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
     }
 
     private async Task EnrichGameMetadataAsync(Game game, GameViewModel gameVm)
     {
-        if (_metadataService == null) return;
+        if (_metadataService == null)
+            return;
 
         try
         {
-            var metadataResult = await _metadataService.EnrichGameAsync(game, CancellationToken.None);
+            var metadataResult = await _metadataService.EnrichGameAsync(
+                game,
+                CancellationToken.None
+            );
 
             if (!metadataResult.IsSuccess || metadataResult.Value == null)
                 return;
@@ -431,7 +499,10 @@ public partial class FullscreenViewModel : ViewModelBase
             // Download cover art if available
             if (!string.IsNullOrEmpty(metadata.CoverImageUrl))
             {
-                var coverResult = await _metadataService.DownloadCoverArtAsync(metadata, CancellationToken.None);
+                var coverResult = await _metadataService.DownloadCoverArtAsync(
+                    metadata,
+                    CancellationToken.None
+                );
 
                 if (coverResult.IsSuccess && !string.IsNullOrEmpty(coverResult.Value))
                 {

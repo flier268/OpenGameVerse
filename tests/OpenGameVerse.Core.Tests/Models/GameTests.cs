@@ -13,7 +13,7 @@ public class GameTests
         {
             Title = "Test Game",
             InstallPath = "/path/to/game",
-            Platform = "Steam"
+            Platform = "Steam",
         };
 
         // Assert
@@ -36,7 +36,7 @@ public class GameTests
             SizeBytes = 1024 * 1024 * 1024, // 1GB
             LastPlayed = DateTime.UtcNow,
             IgdbId = "12345",
-            CoverImagePath = "/path/to/cover.jpg"
+            CoverImagePath = "/path/to/cover.jpg",
         };
 
         // Assert
@@ -57,7 +57,7 @@ public class GameTests
             Title = "Portal 2",
             InstallPath = "/games/portal2",
             Platform = "Steam",
-            PlatformId = "620" // Steam App ID
+            PlatformId = "620", // Steam App ID
         };
 
         // Assert

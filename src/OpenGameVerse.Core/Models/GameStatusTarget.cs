@@ -5,4 +5,5 @@ public sealed record GameStatusTarget(
     string? Title,
     string? ExecutablePath,
     string? InstallPath,
-    string? PlatformId);
+    string? PlatformId
+);

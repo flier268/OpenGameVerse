@@ -15,6 +15,7 @@ public readonly struct Result
     }
 
     public static Result Success() => new(true, null);
+
     public static Result Failure(string error) => new(false, error);
 }
 
@@ -35,5 +36,6 @@ public readonly struct Result<T>
     }
 
     public static Result<T> Success(T value) => new(true, value, null);
+
     public static Result<T> Failure(string error) => new(false, default, error);
 }

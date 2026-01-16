@@ -8,5 +8,5 @@ public enum PlatformType
     Unknown,
     Windows,
     Linux,
-    MacOS
+    MacOS,
 }

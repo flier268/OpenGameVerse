@@ -85,7 +85,7 @@ public static class WinePrefixManager
         var requiredDirs = new[]
         {
             Path.Combine(path, "drive_c"),
-            Path.Combine(path, "dosdevices")
+            Path.Combine(path, "dosdevices"),
         };
 
         return requiredDirs.All(Directory.Exists);
@@ -150,7 +150,15 @@ public static class WinePrefixManager
         }
 
         // Check Bottles prefix locations
-        var bottlesDir = Path.Combine(home, ".var", "app", "com.usebottles.bottles", "data", "bottles", "bottles");
+        var bottlesDir = Path.Combine(
+            home,
+            ".var",
+            "app",
+            "com.usebottles.bottles",
+            "data",
+            "bottles",
+            "bottles"
+        );
         if (Directory.Exists(bottlesDir))
         {
             try

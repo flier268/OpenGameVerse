@@ -1,7 +1,7 @@
+using System.Text.Json;
 using FluentAssertions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Core.Serialization;
-using System.Text.Json;
 
 namespace OpenGameVerse.Core.Tests.Serialization;
 
@@ -19,7 +19,7 @@ public class JsonContextTests
             Platform = "Steam",
             SizeBytes = 1024,
             DiscoveredAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            UpdatedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         };
 
         // Act
@@ -36,16 +36,16 @@ public class JsonContextTests
     {
         // Arrange
         var json = """
-        {
-            "id": 1,
-            "title": "Test Game",
-            "installPath": "/path/to/game",
-            "platform": "Steam",
-            "sizeBytes": 1024,
-            "discoveredAt": "2024-01-01T00:00:00Z",
-            "updatedAt": "2024-01-01T00:00:00Z"
-        }
-        """;
+            {
+                "id": 1,
+                "title": "Test Game",
+                "installPath": "/path/to/game",
+                "platform": "Steam",
+                "sizeBytes": 1024,
+                "discoveredAt": "2024-01-01T00:00:00Z",
+                "updatedAt": "2024-01-01T00:00:00Z"
+            }
+            """;
 
         // Act
         var game = JsonSerializer.Deserialize(json, OpenGameVerseJsonContext.Default.Game);
@@ -63,8 +63,18 @@ public class JsonContextTests
         // Arrange
         var games = new List<Game>
         {
-            new Game { Title = "Game 1", InstallPath = "/path1", Platform = "Steam" },
-            new Game { Title = "Game 2", InstallPath = "/path2", Platform = "Epic" }
+            new Game
+            {
+                Title = "Game 1",
+                InstallPath = "/path1",
+                Platform = "Steam",
+            },
+            new Game
+            {
+                Title = "Game 2",
+                InstallPath = "/path2",
+                Platform = "Epic",
+            },
         };
 
         // Act

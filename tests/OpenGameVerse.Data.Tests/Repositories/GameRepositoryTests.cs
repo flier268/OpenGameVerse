@@ -39,7 +39,7 @@ public class GameRepositoryTests : IDisposable
             Platform = "Steam",
             SizeBytes = 1024,
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         // Act
@@ -61,7 +61,7 @@ public class GameRepositoryTests : IDisposable
             Platform = "Steam",
             SizeBytes = 1024 * 1024 * 1024,
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         var addResult = await _repository.AddGameAsync(game, CancellationToken.None);
@@ -98,13 +98,16 @@ public class GameRepositoryTests : IDisposable
             InstallPath = "/games/halflife2",
             Platform = "Steam",
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         await _repository.AddGameAsync(game, CancellationToken.None);
 
         // Act
-        var result = await _repository.GetGameByPathAsync("/games/halflife2", CancellationToken.None);
+        var result = await _repository.GetGameByPathAsync(
+            "/games/halflife2",
+            CancellationToken.None
+        );
 
         // Assert
         result.IsSuccess.Should().BeTrue();
@@ -118,9 +121,30 @@ public class GameRepositoryTests : IDisposable
         // Arrange
         var games = new[]
         {
-            new Game { Title = "Game 1", InstallPath = "/path1", Platform = "Steam", DiscoveredAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new Game { Title = "Game 2", InstallPath = "/path2", Platform = "Epic", DiscoveredAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new Game { Title = "Game 3", InstallPath = "/path3", Platform = "GOG", DiscoveredAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+            new Game
+            {
+                Title = "Game 1",
+                InstallPath = "/path1",
+                Platform = "Steam",
+                DiscoveredAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            },
+            new Game
+            {
+                Title = "Game 2",
+                InstallPath = "/path2",
+                Platform = "Epic",
+                DiscoveredAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            },
+            new Game
+            {
+                Title = "Game 3",
+                InstallPath = "/path3",
+                Platform = "GOG",
+                DiscoveredAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            },
         };
 
         foreach (var game in games)
@@ -148,8 +172,22 @@ public class GameRepositoryTests : IDisposable
         // Arrange
         var games = new[]
         {
-            new Game { Title = "Game 1", InstallPath = "/path1", Platform = "Steam", DiscoveredAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new Game { Title = "Game 2", InstallPath = "/path2", Platform = "Epic", DiscoveredAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
+            new Game
+            {
+                Title = "Game 1",
+                InstallPath = "/path1",
+                Platform = "Steam",
+                DiscoveredAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            },
+            new Game
+            {
+                Title = "Game 2",
+                InstallPath = "/path2",
+                Platform = "Epic",
+                DiscoveredAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            },
         };
 
         foreach (var game in games)
@@ -176,7 +214,7 @@ public class GameRepositoryTests : IDisposable
             Platform = "Steam",
             SizeBytes = 1000,
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         var addResult = await _repository.AddGameAsync(game, CancellationToken.None);
@@ -205,7 +243,7 @@ public class GameRepositoryTests : IDisposable
             InstallPath = "/delete/me",
             Platform = "Steam",
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         var addResult = await _repository.AddGameAsync(game, CancellationToken.None);
@@ -231,7 +269,7 @@ public class GameRepositoryTests : IDisposable
             InstallPath = "/same/path",
             Platform = "Steam",
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         var game2 = new Game
@@ -240,7 +278,7 @@ public class GameRepositoryTests : IDisposable
             InstallPath = "/same/path", // Same path
             Platform = "Epic",
             DiscoveredAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
         };
 
         // Act

@@ -24,7 +24,7 @@ public sealed class WindowsPlatformHost : IPlatformHost
         {
             new SteamScanner(),
             new EpicGamesScanner(),
-            new GogGalaxyScanner()
+            new GogGalaxyScanner(),
         };
     }
 
@@ -33,16 +33,19 @@ public sealed class WindowsPlatformHost : IPlatformHost
         return _scanners;
     }
 
-    public async Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(GameInstallation installation, CancellationToken ct)
+    public async Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(
+        GameInstallation installation,
+        CancellationToken ct
+    )
     {
         if (string.IsNullOrWhiteSpace(installation.ExecutablePath))
         {
-            return Result<System.Diagnostics.Process?>.Failure("No executable path configured for this game");
+            return Result<System.Diagnostics.Process?>.Failure(
+                "No executable path configured for this game"
+            );
         }
 
         // Launch the game (no special environment variables needed on Windows)
-        return await _processLauncher.LaunchAsync(
-            installation.ExecutablePath,
-            ct: ct);
+        return await _processLauncher.LaunchAsync(installation.ExecutablePath, ct: ct);
     }
 }

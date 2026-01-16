@@ -21,5 +21,8 @@ public interface IPlatformHost
     /// <summary>
     /// Launches a game with platform-specific execution
     /// </summary>
-    Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(GameInstallation installation, CancellationToken ct);
+    Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(
+        GameInstallation installation,
+        CancellationToken ct
+    );
 }

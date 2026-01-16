@@ -5,7 +5,8 @@ public sealed class AppSettings
     public bool IsDarkTheme { get; set; } = true;
     public Language Language { get; set; } = Language.TraditionalChinese;
     public GameLaunchAction GameLaunchAction { get; set; } = GameLaunchAction.Minimize;
-    public GameCloseAction GameCloseAction { get; set; } = GameCloseAction.RestoreWhenLaunchedFromUi;
+    public GameCloseAction GameCloseAction { get; set; } =
+        GameCloseAction.RestoreWhenLaunchedFromUi;
     public bool ShowTrayIcon { get; set; } = true;
     public TrayIconStyle TrayIconStyle { get; set; } = TrayIconStyle.Gamepad;
     public bool MinimizeToTrayOnMinimize { get; set; }

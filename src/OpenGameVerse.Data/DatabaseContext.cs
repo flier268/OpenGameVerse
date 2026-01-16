@@ -1,5 +1,5 @@
-using Microsoft.Data.Sqlite;
 using System.Reflection;
+using Microsoft.Data.Sqlite;
 
 namespace OpenGameVerse.Data;
 
@@ -12,7 +12,8 @@ public sealed class DatabaseContext
 
     public DatabaseContext(string connectionString)
     {
-        _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+        _connectionString =
+            connectionString ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
     /// <summary>
@@ -65,7 +66,7 @@ public sealed class DatabaseContext
             (version: 1, script: "OpenGameVerse.Data.Migrations.InitialSchema.sql"),
             (version: 2, script: "OpenGameVerse.Data.Migrations.002_AddUserOrganization.sql"),
             (version: 3, script: "OpenGameVerse.Data.Migrations.003_AddCategoriesTable.sql"),
-            (version: 4, script: "OpenGameVerse.Data.Migrations.004_AddPlatformId.sql")
+            (version: 4, script: "OpenGameVerse.Data.Migrations.004_AddPlatformId.sql"),
         };
 
         var assembly = Assembly.GetExecutingAssembly();
@@ -80,7 +81,9 @@ public sealed class DatabaseContext
             using var stream = assembly.GetManifestResourceStream(migration.script);
             if (stream == null)
             {
-                throw new InvalidOperationException($"Migration script not found: {migration.script}");
+                throw new InvalidOperationException(
+                    $"Migration script not found: {migration.script}"
+                );
             }
 
             using var reader = new StreamReader(stream);
@@ -98,7 +101,8 @@ public sealed class DatabaseContext
                 // Column already exists, skip and continue
                 // Update schema version anyway
                 using var versionCommand = connection.CreateCommand();
-                versionCommand.CommandText = $"INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES ({migration.version}, unixepoch());";
+                versionCommand.CommandText =
+                    $"INSERT OR IGNORE INTO schema_version (version, applied_at) VALUES ({migration.version}, unixepoch());";
                 versionCommand.ExecuteNonQuery();
             }
         }

@@ -1,7 +1,7 @@
-using OpenGameVerse.Core.Abstractions;
-using OpenGameVerse.Core.Common;
 using System.Diagnostics;
 using System.Runtime.Versioning;
+using OpenGameVerse.Core.Abstractions;
+using OpenGameVerse.Core.Common;
 
 namespace OpenGameVerse.Platform.Windows;
 
@@ -15,7 +15,8 @@ public sealed class WindowsProcessLauncher : IProcessLauncher
         string target,
         string? arguments = null,
         Dictionary<string, string>? environmentVariables = null,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         if (string.IsNullOrWhiteSpace(target))
         {
@@ -49,11 +50,7 @@ public sealed class WindowsProcessLauncher : IProcessLauncher
         try
         {
             // Use ShellExecute for protocol URLs
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = url,
-                UseShellExecute = true
-            };
+            var processStartInfo = new ProcessStartInfo { FileName = url, UseShellExecute = true };
 
             using var process = Process.Start(processStartInfo);
 
@@ -77,7 +74,8 @@ public sealed class WindowsProcessLauncher : IProcessLauncher
         string executablePath,
         string? arguments,
         Dictionary<string, string>? environmentVariables,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         try
         {
@@ -93,7 +91,7 @@ public sealed class WindowsProcessLauncher : IProcessLauncher
                 FileName = executablePath,
                 UseShellExecute = false,
                 CreateNoWindow = false,
-                WorkingDirectory = workingDirectory ?? string.Empty
+                WorkingDirectory = workingDirectory ?? string.Empty,
             };
 
             // Add command-line arguments if provided

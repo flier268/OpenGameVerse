@@ -1,6 +1,6 @@
 using Avalonia.Controls;
-using OpenGameVerse.App.Views;
 using OpenGameVerse.App.ViewModels;
+using OpenGameVerse.App.Views;
 using OpenGameVerse.Core.Abstractions;
 
 namespace OpenGameVerse.App.Services;
@@ -11,7 +11,10 @@ namespace OpenGameVerse.App.Services;
 public interface IDialogService
 {
     Task<string?> ShowCategoryInputDialogAsync();
-    Task ShowCategoryManagerAsync(IGameRepository gameRepository, ICategoryRepository categoryRepository);
+    Task ShowCategoryManagerAsync(
+        IGameRepository gameRepository,
+        ICategoryRepository categoryRepository
+    );
     Task ShowSettingsAsync(IAppSettingsService settingsService);
 }
 
@@ -36,7 +39,10 @@ public sealed class DialogService : IDialogService
         return result;
     }
 
-    public async Task ShowCategoryManagerAsync(IGameRepository gameRepository, ICategoryRepository categoryRepository)
+    public async Task ShowCategoryManagerAsync(
+        IGameRepository gameRepository,
+        ICategoryRepository categoryRepository
+    )
     {
         if (_mainWindow == null)
         {
@@ -46,10 +52,7 @@ public sealed class DialogService : IDialogService
         var categoryVm = new CategoryManagerViewModel(gameRepository, categoryRepository, this);
         await categoryVm.InitializeAsync();
 
-        var managerWindow = new CategoryManagerWindow
-        {
-            DataContext = categoryVm
-        };
+        var managerWindow = new CategoryManagerWindow { DataContext = categoryVm };
         managerWindow.SetOwner(_mainWindow);
         await managerWindow.ShowDialog(_mainWindow);
     }
@@ -62,10 +65,7 @@ public sealed class DialogService : IDialogService
         }
 
         var settingsVm = new SettingsViewModel(settingsService);
-        var settingsWindow = new SettingsWindow
-        {
-            DataContext = settingsVm
-        };
+        var settingsWindow = new SettingsWindow { DataContext = settingsVm };
 
         await settingsWindow.ShowDialog(_mainWindow);
     }

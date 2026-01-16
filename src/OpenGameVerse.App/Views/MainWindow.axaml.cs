@@ -59,10 +59,9 @@ public partial class MainWindow : SukiWindow
             {
                 Header = category,
                 Command = vm.SetCategoryToCommand,
-                CommandParameter = (_contextMenuGameVm, category)
+                CommandParameter = (_contextMenuGameVm, category),
             };
             menu.Items.Add(categoryMenuItem);
         }
     }
-
 }

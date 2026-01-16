@@ -1,7 +1,6 @@
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Data;
 using OpenGameVerse.Data.Repositories;
-
 using OpenGameVerse.Platform.Linux;
 using OpenGameVerse.Platform.Windows;
 
@@ -20,7 +19,9 @@ public sealed class ServiceContainer
         // Database
         var dbPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "OpenGameVerse", "opengameverse.db");
+            "OpenGameVerse",
+            "opengameverse.db"
+        );
 
         var connectionString = $"Data Source={dbPath};Cache=Shared;Mode=ReadWriteCreate";
 
@@ -31,23 +32,27 @@ public sealed class ServiceContainer
         Register<IGameRepository>(new GameRepository(connectionString));
 
         // Platform host
-        IPlatformHost platformHost = OperatingSystem.IsWindows()
-            ? new WindowsPlatformHost()
-            : new LinuxPlatformHost();
+        IPlatformHost platformHost =
+            OperatingSystem.IsWindows() ? new WindowsPlatformHost()
+            : OperatingSystem.IsLinux() ? new LinuxPlatformHost()
+            : throw new PlatformNotSupportedException();
         Register(platformHost);
     }
 
-    public void Register<T>(T instance) where T : notnull
+    public void Register<T>(T instance)
+        where T : notnull
     {
         _services[typeof(T)] = instance;
     }
 
-    public T Resolve<T>() where T : notnull
+    public T Resolve<T>()
+        where T : notnull
     {
         if (_services.TryGetValue(typeof(T), out var service))
         {
             return (T)service;
         }
+
         throw new InvalidOperationException($"Service {typeof(T).Name} not registered");
     }
 }

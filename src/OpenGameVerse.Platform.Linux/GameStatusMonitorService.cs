@@ -8,12 +8,11 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
 {
     private const int ProcessCacheTtlTicks = 64;
     private static readonly Lock ProcessCacheLock = new();
-    private static readonly Dictionary<(int Id, string Name), CachedProcessInfo> ProcessCache = new();
+    private static readonly Dictionary<(int Id, string Name), CachedProcessInfo> ProcessCache =
+        new();
 
     public GameStatusMonitorService(TimeSpan? interval = null)
-        : base(interval)
-    {
-    }
+        : base(interval) { }
 
     protected override StringComparison PathComparison => StringComparison.Ordinal;
 
@@ -28,18 +27,18 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
         }
 
         return string.Equals(normalized, "/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/share", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/share/applications", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/share", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/share/applications", StringComparison.Ordinal)
-               || string.Equals(normalized, "/lib", StringComparison.Ordinal)
-               || string.Equals(normalized, "/lib64", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/lib", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/lib64", StringComparison.Ordinal);
+            || string.Equals(normalized, "/usr", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
+            || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/share", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/share/applications", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/local/share", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/local/share/applications", StringComparison.Ordinal)
+            || string.Equals(normalized, "/lib", StringComparison.Ordinal)
+            || string.Equals(normalized, "/lib64", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/lib", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/lib64", StringComparison.Ordinal);
     }
 
     protected override ReadOnlyCollection<ProcessInfo> GetProcessSnapshot()
@@ -61,13 +60,18 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
                 continue;
             }
 
-            list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, commandLine));
+            list.Add(
+                new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, commandLine)
+            );
         }
 
         return new ReadOnlyCollection<ProcessInfo>(list);
     }
 
-    private static (string? Path, string? CommandLine) GetProcessData(Process process, string procRoot)
+    private static (string? Path, string? CommandLine) GetProcessData(
+        Process process,
+        string procRoot
+    )
     {
         var name = process.ProcessName ?? string.Empty;
         var key = (process.Id, name);
@@ -102,8 +106,11 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
             else
             {
                 // 將重取資料這件事分散在不同tick，降低資源佔用
-                ProcessCache[key] =
-                    new CachedProcessInfo(path, commandLine, Random.Shared.Next(1, ProcessCacheTtlTicks));
+                ProcessCache[key] = new CachedProcessInfo(
+                    path,
+                    commandLine,
+                    Random.Shared.Next(1, ProcessCacheTtlTicks)
+                );
             }
         }
 

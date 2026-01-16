@@ -1,9 +1,9 @@
+using System.Runtime.CompilerServices;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Common;
 using OpenGameVerse.Core.Models;
-using System.Runtime.CompilerServices;
 
 namespace OpenGameVerse.Data.Repositories;
 
@@ -16,7 +16,8 @@ public sealed class GameRepository : IGameRepository
 
     public GameRepository(string connectionString)
     {
-        _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+        _connectionString =
+            connectionString ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
     [DapperAot]
@@ -42,22 +43,25 @@ public sealed class GameRepository : IGameRepository
                 RETURNING id;
                 """;
 
-            var id = await connection.ExecuteScalarAsync<long>(sql, new
-            {
-                game.Title,
-                NormalizedTitle = game.Title.ToLowerInvariant(),
-                game.InstallPath,
-                game.Platform,
-                game.PlatformId,
-                game.ExecutablePath,
-                game.IconPath,
-                game.SizeBytes,
-                game.IgdbId,
-                game.CoverImagePath,
-                game.IsFavorite,
-                game.CustomCategory,
-                game.SortOrder
-            });
+            var id = await connection.ExecuteScalarAsync<long>(
+                sql,
+                new
+                {
+                    game.Title,
+                    NormalizedTitle = game.Title.ToLowerInvariant(),
+                    game.InstallPath,
+                    game.Platform,
+                    game.PlatformId,
+                    game.ExecutablePath,
+                    game.IconPath,
+                    game.SizeBytes,
+                    game.IgdbId,
+                    game.CoverImagePath,
+                    game.IsFavorite,
+                    game.CustomCategory,
+                    game.SortOrder,
+                }
+            );
 
             return Result<long>.Success(id);
         }
@@ -95,26 +99,29 @@ public sealed class GameRepository : IGameRepository
                 WHERE id = @Id;
                 """;
 
-            await connection.ExecuteAsync(sql, new
-            {
-                game.Id,
-                game.Title,
-                NormalizedTitle = game.Title.ToLowerInvariant(),
-                game.InstallPath,
-                game.Platform,
-                game.PlatformId,
-                game.ExecutablePath,
-                game.IconPath,
-                game.SizeBytes,
-                LastPlayed = game.LastPlayed.HasValue
-                    ? new DateTimeOffset(game.LastPlayed.Value).ToUnixTimeSeconds()
-                    : (long?)null,
-                game.IgdbId,
-                game.CoverImagePath,
-                game.IsFavorite,
-                game.CustomCategory,
-                game.SortOrder
-            });
+            await connection.ExecuteAsync(
+                sql,
+                new
+                {
+                    game.Id,
+                    game.Title,
+                    NormalizedTitle = game.Title.ToLowerInvariant(),
+                    game.InstallPath,
+                    game.Platform,
+                    game.PlatformId,
+                    game.ExecutablePath,
+                    game.IconPath,
+                    game.SizeBytes,
+                    LastPlayed = game.LastPlayed.HasValue
+                        ? new DateTimeOffset(game.LastPlayed.Value).ToUnixTimeSeconds()
+                        : (long?)null,
+                    game.IgdbId,
+                    game.CoverImagePath,
+                    game.IsFavorite,
+                    game.CustomCategory,
+                    game.SortOrder,
+                }
+            );
 
             return Result.Success();
         }
@@ -194,7 +201,10 @@ public sealed class GameRepository : IGameRepository
                 FROM games
                 WHERE install_path = @InstallPath;
                 """;
-            var game = await connection.QueryFirstOrDefaultAsync<Game>(sql, new { InstallPath = installPath });
+            var game = await connection.QueryFirstOrDefaultAsync<Game>(
+                sql,
+                new { InstallPath = installPath }
+            );
 
             return Result<Game?>.Success(game);
         }
@@ -205,7 +215,9 @@ public sealed class GameRepository : IGameRepository
     }
 
     [DapperAot]
-    public async IAsyncEnumerable<Game> GetAllGamesAsync([EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<Game> GetAllGamesAsync(
+        [EnumeratorCancellation] CancellationToken ct
+    )
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(ct);

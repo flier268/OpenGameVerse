@@ -4,11 +4,11 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using OpenGameVerse.App.Services;
+using OpenGameVerse.App.Views;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Metadata.Abstractions;
-using OpenGameVerse.App.Views;
-using OpenGameVerse.App.Services;
 
 namespace OpenGameVerse.App.ViewModels;
 
@@ -64,7 +64,15 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public partial ObservableCollection<string> CategoriesForAssignment { get; set; } = new();
 
-    public MainWindowViewModel(IGameRepository gameRepository, ICategoryRepository categoryRepository, IPlatformHost platformHost, IDialogService dialogService, IAppSettingsService settingsService, GameStatusMonitorCoordinator gameStatusMonitor, IMetadataService? metadataService = null)
+    public MainWindowViewModel(
+        IGameRepository gameRepository,
+        ICategoryRepository categoryRepository,
+        IPlatformHost platformHost,
+        IDialogService dialogService,
+        IAppSettingsService settingsService,
+        GameStatusMonitorCoordinator gameStatusMonitor,
+        IMetadataService? metadataService = null
+    )
     {
         _gameRepository = gameRepository;
         _categoryRepository = categoryRepository;
@@ -77,8 +85,13 @@ public partial class MainWindowViewModel : ViewModelBase
         // Wire up property changed events for filtering
         PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName is nameof(SearchText) or nameof(SelectedPlatformFilter)
-                or nameof(SelectedCategoryFilter) or nameof(ShowFavoritesOnly))
+            if (
+                e.PropertyName
+                is nameof(SearchText)
+                    or nameof(SelectedPlatformFilter)
+                    or nameof(SelectedCategoryFilter)
+                    or nameof(ShowFavoritesOnly)
+            )
             {
                 ApplyFilters();
             }
@@ -116,7 +129,10 @@ public partial class MainWindowViewModel : ViewModelBase
                 Games.Add(gameVm);
 
                 // Enrich with metadata if available (fire and forget)
-                if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
+                if (
+                    _metadataService != null
+                    && _settingsService.CurrentSettings.DownloadMetadataAfterImport
+                )
                 {
                     _ = EnrichGameMetadataAsync(game, gameVm);
                 }
@@ -141,7 +157,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task ScanGamesAsync()
     {
-        if (IsScanning) return;
+        if (IsScanning)
+            return;
 
         try
         {
@@ -169,28 +186,44 @@ public partial class MainWindowViewModel : ViewModelBase
 
                     // Check if game already exists
                     var existingResult = await _gameRepository.GetGameByPathAsync(
-                        gameInstallation.InstallPath, CancellationToken.None);
+                        gameInstallation.InstallPath,
+                        CancellationToken.None
+                    );
 
                     if (existingResult.IsSuccess && existingResult.Value != null)
                     {
                         var existingGame = existingResult.Value;
-                        if (!string.IsNullOrWhiteSpace(gameInstallation.PlatformId)
-                            && string.IsNullOrWhiteSpace(existingGame.PlatformId))
+                        if (
+                            !string.IsNullOrWhiteSpace(gameInstallation.PlatformId)
+                            && string.IsNullOrWhiteSpace(existingGame.PlatformId)
+                        )
                         {
                             existingGame.PlatformId = gameInstallation.PlatformId;
-                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                            await _gameRepository.UpdateGameAsync(
+                                existingGame,
+                                CancellationToken.None
+                            );
                         }
                         if (!string.IsNullOrWhiteSpace(gameInstallation.CoverImagePath))
                         {
-                            var needsCover = string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
+                            var needsCover =
+                                string.IsNullOrWhiteSpace(existingGame.CoverImagePath)
                                 || !File.Exists(existingGame.CoverImagePath);
                             if (needsCover)
                             {
                                 existingGame.CoverImagePath = gameInstallation.CoverImagePath;
-                                await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                                await _gameRepository.UpdateGameAsync(
+                                    existingGame,
+                                    CancellationToken.None
+                                );
 
                                 var existingVm = Games.FirstOrDefault(vm =>
-                                    string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                                    string.Equals(
+                                        vm.InstallPath,
+                                        existingGame.InstallPath,
+                                        StringComparison.OrdinalIgnoreCase
+                                    )
+                                );
                                 if (existingVm != null)
                                 {
                                     existingVm.CoverImagePath = gameInstallation.CoverImagePath;
@@ -198,14 +231,24 @@ public partial class MainWindowViewModel : ViewModelBase
                             }
                         }
 
-                        if (_settingsService.CurrentSettings.UpdateInstallSizeOnLibraryUpdate
-                            && existingGame.SizeBytes != gameInstallation.SizeBytes)
+                        if (
+                            _settingsService.CurrentSettings.UpdateInstallSizeOnLibraryUpdate
+                            && existingGame.SizeBytes != gameInstallation.SizeBytes
+                        )
                         {
                             existingGame.SizeBytes = gameInstallation.SizeBytes;
-                            await _gameRepository.UpdateGameAsync(existingGame, CancellationToken.None);
+                            await _gameRepository.UpdateGameAsync(
+                                existingGame,
+                                CancellationToken.None
+                            );
 
                             var existingVm = Games.FirstOrDefault(vm =>
-                                string.Equals(vm.InstallPath, existingGame.InstallPath, StringComparison.OrdinalIgnoreCase));
+                                string.Equals(
+                                    vm.InstallPath,
+                                    existingGame.InstallPath,
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            );
                             if (existingVm != null)
                             {
                                 existingVm.SizeBytes = gameInstallation.SizeBytes;
@@ -228,7 +271,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         CoverImagePath = gameInstallation.CoverImagePath,
                         SizeBytes = gameInstallation.SizeBytes,
                         DiscoveredAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
+                        UpdatedAt = DateTime.UtcNow,
                     };
 
                     var result = await _gameRepository.AddGameAsync(game, CancellationToken.None);
@@ -240,7 +283,10 @@ public partial class MainWindowViewModel : ViewModelBase
                         var gameVm = GameViewModel.FromModel(game);
                         Games.Add(gameVm);
 
-                        if (_metadataService != null && _settingsService.CurrentSettings.DownloadMetadataAfterImport)
+                        if (
+                            _metadataService != null
+                            && _settingsService.CurrentSettings.DownloadMetadataAfterImport
+                        )
                         {
                             _ = EnrichGameMetadataAsync(game, gameVm);
                         }
@@ -287,11 +333,9 @@ public partial class MainWindowViewModel : ViewModelBase
             parentWindow,
             _settingsService,
             _gameStatusMonitor,
-            _metadataService);
-        var fullscreenWindow = new FullscreenWindow
-        {
-            DataContext = fullscreenViewModel
-        };
+            _metadataService
+        );
+        var fullscreenWindow = new FullscreenWindow { DataContext = fullscreenViewModel };
 
         fullscreenWindow.Closed += (_, _) => parentWindow.Show();
 
@@ -303,11 +347,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task EnrichGameMetadataAsync(Game game, GameViewModel gameVm)
     {
-        if (_metadataService == null) return;
+        if (_metadataService == null)
+            return;
 
         try
         {
-            var metadataResult = await _metadataService.EnrichGameAsync(game, CancellationToken.None);
+            var metadataResult = await _metadataService.EnrichGameAsync(
+                game,
+                CancellationToken.None
+            );
 
             if (!metadataResult.IsSuccess || metadataResult.Value == null)
                 return;
@@ -323,7 +371,10 @@ public partial class MainWindowViewModel : ViewModelBase
             // Download cover art if available
             if (!string.IsNullOrEmpty(metadata.CoverImageUrl))
             {
-                var coverResult = await _metadataService.DownloadCoverArtAsync(metadata, CancellationToken.None);
+                var coverResult = await _metadataService.DownloadCoverArtAsync(
+                    metadata,
+                    CancellationToken.None
+                );
 
                 if (coverResult.IsSuccess && !string.IsNullOrEmpty(coverResult.Value))
                 {
@@ -350,7 +401,10 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = $"Launching {gameViewModel.Title}...";
 
             // Get full game data from repository
-            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+            var gameResult = await _gameRepository.GetGameByIdAsync(
+                gameViewModel.Id,
+                CancellationToken.None
+            );
 
             if (!gameResult.IsSuccess || gameResult.Value == null)
             {
@@ -368,11 +422,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 Platform = game.Platform,
                 ExecutablePath = game.ExecutablePath,
                 IconPath = game.IconPath,
-                SizeBytes = game.SizeBytes
+                SizeBytes = game.SizeBytes,
             };
 
             // Launch through platform host
-            var launchResult = await _platformHost.LaunchGameAsync(installation, CancellationToken.None);
+            var launchResult = await _platformHost.LaunchGameAsync(
+                installation,
+                CancellationToken.None
+            );
 
             if (launchResult.IsSuccess)
             {
@@ -392,7 +449,10 @@ public partial class MainWindowViewModel : ViewModelBase
                             return;
                         }
 
-                        if (settings.GameCloseAction == GameCloseAction.RestoreWhenLaunchedFromUi && !didChangeWindow)
+                        if (
+                            settings.GameCloseAction == GameCloseAction.RestoreWhenLaunchedFromUi
+                            && !didChangeWindow
+                        )
                         {
                             return;
                         }
@@ -402,7 +462,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
                 else
                 {
-                    _ = MonitorGameExitAsync(game.Id, mainWindow, didChangeWindow, settings.GameCloseAction);
+                    _ = MonitorGameExitAsync(
+                        game.Id,
+                        mainWindow,
+                        didChangeWindow,
+                        settings.GameCloseAction
+                    );
                 }
 
                 // Update last played
@@ -433,11 +498,15 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             StatusMessage = $"Stopping {gameViewModel.Title}...";
-            var stopped = await _gameStatusMonitor.StopGameAsync(gameViewModel, CancellationToken.None);
+            var stopped = await _gameStatusMonitor.StopGameAsync(
+                gameViewModel,
+                CancellationToken.None
+            );
 
-            StatusMessage = stopped > 0
-                ? $"Stopped {gameViewModel.Title}"
-                : $"No running process found for {gameViewModel.Title}";
+            StatusMessage =
+                stopped > 0
+                    ? $"Stopped {gameViewModel.Title}"
+                    : $"No running process found for {gameViewModel.Title}";
         }
         catch (Exception ex)
         {
@@ -455,14 +524,19 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             AvailablePlatforms.Add(platform);
         }
-        if (string.IsNullOrEmpty(SelectedPlatformFilter) || !AvailablePlatforms.Contains(SelectedPlatformFilter))
+        if (
+            string.IsNullOrEmpty(SelectedPlatformFilter)
+            || !AvailablePlatforms.Contains(SelectedPlatformFilter)
+        )
         {
             SelectedPlatformFilter = "All Platforms";
         }
 
         // Update category list from repository and existing game assignments
         var categories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        await foreach (var (name, _) in _categoryRepository.GetAllCategoriesAsync(CancellationToken.None))
+        await foreach (
+            var (name, _) in _categoryRepository.GetAllCategoriesAsync(CancellationToken.None)
+        )
         {
             if (!string.IsNullOrWhiteSpace(name) && name != "Uncategorized")
             {
@@ -470,9 +544,11 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         }
 
-        foreach (var category in Games
-            .Where(g => !string.IsNullOrEmpty(g.CustomCategory))
-            .Select(g => g.CustomCategory!))
+        foreach (
+            var category in Games
+                .Where(g => !string.IsNullOrEmpty(g.CustomCategory))
+                .Select(g => g.CustomCategory!)
+        )
         {
             categories.Add(category);
         }
@@ -485,7 +561,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             AvailableCategories.Add(category);
         }
-        if (string.IsNullOrEmpty(SelectedCategoryFilter) || !AvailableCategories.Contains(SelectedCategoryFilter))
+        if (
+            string.IsNullOrEmpty(SelectedCategoryFilter)
+            || !AvailableCategories.Contains(SelectedCategoryFilter)
+        )
         {
             SelectedCategoryFilter = "All Categories";
         }
@@ -523,13 +602,19 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         // Platform filter
-        if (!string.IsNullOrEmpty(SelectedPlatformFilter) && SelectedPlatformFilter != "All Platforms")
+        if (
+            !string.IsNullOrEmpty(SelectedPlatformFilter)
+            && SelectedPlatformFilter != "All Platforms"
+        )
         {
             filtered = filtered.Where(g => g.Platform == SelectedPlatformFilter);
         }
 
         // Category filter
-        if (!string.IsNullOrEmpty(SelectedCategoryFilter) && SelectedCategoryFilter != "All Categories")
+        if (
+            !string.IsNullOrEmpty(SelectedCategoryFilter)
+            && SelectedCategoryFilter != "All Categories"
+        )
         {
             if (SelectedCategoryFilter == "Uncategorized")
             {
@@ -582,7 +667,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static Window? GetMainWindow()
     {
-        if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (
+            Avalonia.Application.Current?.ApplicationLifetime
+            is IClassicDesktopStyleApplicationLifetime desktop
+        )
         {
             return desktop.MainWindow;
         }
@@ -623,7 +711,12 @@ public partial class MainWindowViewModel : ViewModelBase
         window.Activate();
     }
 
-    private async Task MonitorGameExitAsync(long gameId, Window? window, bool didChangeWindow, GameCloseAction closeAction)
+    private async Task MonitorGameExitAsync(
+        long gameId,
+        Window? window,
+        bool didChangeWindow,
+        GameCloseAction closeAction
+    )
     {
         if (closeAction == GameCloseAction.KeepMinimized)
         {
@@ -641,9 +734,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _gameStatusMonitor.WaitForGameExitAsync(gameId, cts.Token);
             Dispatcher.UIThread.Post(() => RestoreWindow(window));
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
     }
 
     [RelayCommand]
@@ -654,7 +745,10 @@ public partial class MainWindowViewModel : ViewModelBase
             gameViewModel.IsFavorite = !gameViewModel.IsFavorite;
 
             // Update in database
-            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+            var gameResult = await _gameRepository.GetGameByIdAsync(
+                gameViewModel.Id,
+                CancellationToken.None
+            );
             if (gameResult.IsSuccess && gameResult.Value != null)
             {
                 var game = gameResult.Value;
@@ -681,7 +775,10 @@ public partial class MainWindowViewModel : ViewModelBase
             gameViewModel.CustomCategory = null;
 
             // Update in database
-            var gameResult = await _gameRepository.GetGameByIdAsync(gameViewModel.Id, CancellationToken.None);
+            var gameResult = await _gameRepository.GetGameByIdAsync(
+                gameViewModel.Id,
+                CancellationToken.None
+            );
             if (gameResult.IsSuccess && gameResult.Value != null)
             {
                 var game = gameResult.Value;
@@ -709,7 +806,10 @@ public partial class MainWindowViewModel : ViewModelBase
             args.game.CustomCategory = args.category;
 
             // Update in database
-            var gameResult = await _gameRepository.GetGameByIdAsync(args.game.Id, CancellationToken.None);
+            var gameResult = await _gameRepository.GetGameByIdAsync(
+                args.game.Id,
+                CancellationToken.None
+            );
             if (gameResult.IsSuccess && gameResult.Value != null)
             {
                 var game = gameResult.Value;
@@ -758,10 +858,16 @@ public partial class MainWindowViewModel : ViewModelBase
                     return;
                 }
 
-                var exists = await _categoryRepository.CategoryExistsAsync(trimmedName, CancellationToken.None);
+                var exists = await _categoryRepository.CategoryExistsAsync(
+                    trimmedName,
+                    CancellationToken.None
+                );
                 if (!exists)
                 {
-                    var added = await _categoryRepository.AddCategoryAsync(trimmedName, CancellationToken.None);
+                    var added = await _categoryRepository.AddCategoryAsync(
+                        trimmedName,
+                        CancellationToken.None
+                    );
                     if (!added)
                     {
                         StatusMessage = $"Error creating category: {trimmedName}";

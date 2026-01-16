@@ -60,40 +60,48 @@ public partial class SettingsViewModel : ViewModelBase
     [ObservableProperty]
     public partial OptionItem<PlaytimeImportMode>? SelectedPlaytimeImportModeOption { get; set; }
 
-    public IReadOnlyList<OptionItem<Language>> LanguageOptions { get; } = new[]
-    {
-        new OptionItem<Language>(Language.TraditionalChinese, "中文 (繁體)"),
-        new OptionItem<Language>(Language.English, "English (en_US)"),
-        new OptionItem<Language>(Language.Japanese, "日本語 (ja_JP)")
-    };
+    public IReadOnlyList<OptionItem<Language>> LanguageOptions { get; } =
+        new[]
+        {
+            new OptionItem<Language>(Language.TraditionalChinese, "中文 (繁體)"),
+            new OptionItem<Language>(Language.English, "English (en_US)"),
+            new OptionItem<Language>(Language.Japanese, "日本語 (ja_JP)"),
+        };
 
-    public IReadOnlyList<OptionItem<GameLaunchAction>> GameLaunchActionOptions { get; } = new[]
-    {
-        new OptionItem<GameLaunchAction>(GameLaunchAction.Minimize, "最小化"),
-        new OptionItem<GameLaunchAction>(GameLaunchAction.Hide, "隱藏"),
-        new OptionItem<GameLaunchAction>(GameLaunchAction.NoChange, "不變更")
-    };
+    public IReadOnlyList<OptionItem<GameLaunchAction>> GameLaunchActionOptions { get; } =
+        new[]
+        {
+            new OptionItem<GameLaunchAction>(GameLaunchAction.Minimize, "最小化"),
+            new OptionItem<GameLaunchAction>(GameLaunchAction.Hide, "隱藏"),
+            new OptionItem<GameLaunchAction>(GameLaunchAction.NoChange, "不變更"),
+        };
 
-    public IReadOnlyList<OptionItem<GameCloseAction>> GameCloseActionOptions { get; } = new[]
-    {
-        new OptionItem<GameCloseAction>(GameCloseAction.RestoreWhenLaunchedFromUi, "僅在從介面啟動時還原視窗"),
-        new OptionItem<GameCloseAction>(GameCloseAction.AlwaysRestore, "永遠還原視窗"),
-        new OptionItem<GameCloseAction>(GameCloseAction.KeepMinimized, "維持最小化")
-    };
+    public IReadOnlyList<OptionItem<GameCloseAction>> GameCloseActionOptions { get; } =
+        new[]
+        {
+            new OptionItem<GameCloseAction>(
+                GameCloseAction.RestoreWhenLaunchedFromUi,
+                "僅在從介面啟動時還原視窗"
+            ),
+            new OptionItem<GameCloseAction>(GameCloseAction.AlwaysRestore, "永遠還原視窗"),
+            new OptionItem<GameCloseAction>(GameCloseAction.KeepMinimized, "維持最小化"),
+        };
 
-    public IReadOnlyList<OptionItem<TrayIconStyle>> TrayIconStyleOptions { get; } = new[]
-    {
-        new OptionItem<TrayIconStyle>(TrayIconStyle.Gamepad, "遊戲手把"),
-        new OptionItem<TrayIconStyle>(TrayIconStyle.Default, "預設"),
-        new OptionItem<TrayIconStyle>(TrayIconStyle.Minimal, "簡約")
-    };
+    public IReadOnlyList<OptionItem<TrayIconStyle>> TrayIconStyleOptions { get; } =
+        new[]
+        {
+            new OptionItem<TrayIconStyle>(TrayIconStyle.Gamepad, "遊戲手把"),
+            new OptionItem<TrayIconStyle>(TrayIconStyle.Default, "預設"),
+            new OptionItem<TrayIconStyle>(TrayIconStyle.Minimal, "簡約"),
+        };
 
-    public IReadOnlyList<OptionItem<PlaytimeImportMode>> PlaytimeImportModeOptions { get; } = new[]
-    {
-        new OptionItem<PlaytimeImportMode>(PlaytimeImportMode.NewOnly, "只針對新匯入的遊戲"),
-        new OptionItem<PlaytimeImportMode>(PlaytimeImportMode.AllGames, "所有遊戲"),
-        new OptionItem<PlaytimeImportMode>(PlaytimeImportMode.Disabled, "不匯入")
-    };
+    public IReadOnlyList<OptionItem<PlaytimeImportMode>> PlaytimeImportModeOptions { get; } =
+        new[]
+        {
+            new OptionItem<PlaytimeImportMode>(PlaytimeImportMode.NewOnly, "只針對新匯入的遊戲"),
+            new OptionItem<PlaytimeImportMode>(PlaytimeImportMode.AllGames, "所有遊戲"),
+            new OptionItem<PlaytimeImportMode>(PlaytimeImportMode.Disabled, "不匯入"),
+        };
 
     public SettingsViewModel(IAppSettingsService settingsService)
     {
@@ -101,8 +109,14 @@ public partial class SettingsViewModel : ViewModelBase
         var settings = settingsService.CurrentSettings;
         IsDarkTheme = settings.IsDarkTheme;
         SelectedLanguageOption = FindOption(LanguageOptions, settings.Language);
-        SelectedGameLaunchActionOption = FindOption(GameLaunchActionOptions, settings.GameLaunchAction);
-        SelectedGameCloseActionOption = FindOption(GameCloseActionOptions, settings.GameCloseAction);
+        SelectedGameLaunchActionOption = FindOption(
+            GameLaunchActionOptions,
+            settings.GameLaunchAction
+        );
+        SelectedGameCloseActionOption = FindOption(
+            GameCloseActionOptions,
+            settings.GameCloseAction
+        );
         ShowTrayIcon = settings.ShowTrayIcon;
         SelectedTrayIconStyleOption = FindOption(TrayIconStyleOptions, settings.TrayIconStyle);
         MinimizeToTrayOnMinimize = settings.MinimizeToTrayOnMinimize;
@@ -114,7 +128,10 @@ public partial class SettingsViewModel : ViewModelBase
         StartMinimized = settings.StartMinimized;
         UpdateInstallSizeOnLibraryUpdate = settings.UpdateInstallSizeOnLibraryUpdate;
         UseFuzzyMatchingInFilter = settings.UseFuzzyMatchingInFilter;
-        SelectedPlaytimeImportModeOption = FindOption(PlaytimeImportModeOptions, settings.PlaytimeImportMode);
+        SelectedPlaytimeImportModeOption = FindOption(
+            PlaytimeImportModeOptions,
+            settings.PlaytimeImportMode
+        );
     }
 
     [RelayCommand]
@@ -125,7 +142,8 @@ public partial class SettingsViewModel : ViewModelBase
             IsDarkTheme = IsDarkTheme,
             Language = SelectedLanguageOption?.Value ?? Language.TraditionalChinese,
             GameLaunchAction = SelectedGameLaunchActionOption?.Value ?? GameLaunchAction.Minimize,
-            GameCloseAction = SelectedGameCloseActionOption?.Value ?? GameCloseAction.RestoreWhenLaunchedFromUi,
+            GameCloseAction =
+                SelectedGameCloseActionOption?.Value ?? GameCloseAction.RestoreWhenLaunchedFromUi,
             ShowTrayIcon = ShowTrayIcon,
             TrayIconStyle = SelectedTrayIconStyleOption?.Value ?? TrayIconStyle.Gamepad,
             MinimizeToTrayOnMinimize = MinimizeToTrayOnMinimize,
@@ -137,7 +155,8 @@ public partial class SettingsViewModel : ViewModelBase
             StartMinimized = StartMinimized,
             UpdateInstallSizeOnLibraryUpdate = UpdateInstallSizeOnLibraryUpdate,
             UseFuzzyMatchingInFilter = UseFuzzyMatchingInFilter,
-            PlaytimeImportMode = SelectedPlaytimeImportModeOption?.Value ?? PlaytimeImportMode.NewOnly
+            PlaytimeImportMode =
+                SelectedPlaytimeImportModeOption?.Value ?? PlaytimeImportMode.NewOnly,
         };
 
         await _settingsService.UpdateAsync(settings);

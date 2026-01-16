@@ -25,8 +25,25 @@ public static class ProtonDetector
         {
             Path.Combine(home, ".steam", "steam", "compatibilitytools.d"),
             Path.Combine(home, ".local", "share", "Steam", "compatibilitytools.d"),
-            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".steam", "steam", "compatibilitytools.d"),
-            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam", "compatibilitytools.d")
+            Path.Combine(
+                home,
+                ".var",
+                "app",
+                "com.valvesoftware.Steam",
+                ".steam",
+                "steam",
+                "compatibilitytools.d"
+            ),
+            Path.Combine(
+                home,
+                ".var",
+                "app",
+                "com.valvesoftware.Steam",
+                ".local",
+                "share",
+                "Steam",
+                "compatibilitytools.d"
+            ),
         };
 
         foreach (var compatDir in compatToolsDirs)
@@ -42,8 +59,11 @@ public static class ProtonDetector
                 foreach (var dir in subdirs)
                 {
                     // Check if this looks like a Proton installation
-                    if (Path.GetFileName(dir).Contains("Proton", StringComparison.OrdinalIgnoreCase) ||
-                        Path.GetFileName(dir).Contains("GE-Proton", StringComparison.OrdinalIgnoreCase))
+                    if (
+                        Path.GetFileName(dir).Contains("Proton", StringComparison.OrdinalIgnoreCase)
+                        || Path.GetFileName(dir)
+                            .Contains("GE-Proton", StringComparison.OrdinalIgnoreCase)
+                    )
                     {
                         protonPaths.Add(dir);
                     }
@@ -97,7 +117,15 @@ public static class ProtonDetector
             Path.Combine(home, ".steam", "steam"),
             Path.Combine(home, ".local", "share", "Steam"),
             Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".steam", "steam"),
-            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam")
+            Path.Combine(
+                home,
+                ".var",
+                "app",
+                "com.valvesoftware.Steam",
+                ".local",
+                "share",
+                "Steam"
+            ),
         };
 
         foreach (var steamPath in steamPaths)

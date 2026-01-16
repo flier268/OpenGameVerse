@@ -44,9 +44,8 @@ public partial class GameViewModel : ViewModelBase
     [ObservableProperty]
     public partial int SortOrder { get; set; }
 
-    public string SizeDisplay => SizeBytes > 0
-        ? $"{SizeBytes / (1024.0 * 1024.0 * 1024.0):F2} GB"
-        : "Unknown";
+    public string SizeDisplay =>
+        SizeBytes > 0 ? $"{SizeBytes / (1024.0 * 1024.0 * 1024.0):F2} GB" : "Unknown";
 
     public static GameViewModel FromModel(Game game)
     {
@@ -62,7 +61,7 @@ public partial class GameViewModel : ViewModelBase
             SizeBytes = game.SizeBytes,
             IsFavorite = game.IsFavorite,
             CustomCategory = game.CustomCategory,
-            SortOrder = game.SortOrder
+            SortOrder = game.SortOrder,
         };
     }
 }

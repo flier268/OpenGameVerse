@@ -8,12 +8,11 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
 {
     private const int ProcessCacheTtlTicks = 64;
     private static readonly Lock ProcessCacheLock = new();
-    private static readonly Dictionary<(int Id, string Name), CachedProcessInfo> ProcessCache = new();
+    private static readonly Dictionary<(int Id, string Name), CachedProcessInfo> ProcessCache =
+        new();
 
     public GameStatusMonitorService(TimeSpan? interval = null)
-        : base(interval)
-    {
-    }
+        : base(interval) { }
 
     protected override StringComparison PathComparison => StringComparison.OrdinalIgnoreCase;
 
@@ -26,7 +25,14 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
             try
             {
                 var (path, commandLine) = GetProcessData(process);
-                list.Add(new ProcessInfo(process.Id, NormalizePath(path), process.ProcessName, commandLine));
+                list.Add(
+                    new ProcessInfo(
+                        process.Id,
+                        NormalizePath(path),
+                        process.ProcessName,
+                        commandLine
+                    )
+                );
             }
             catch
             {
@@ -63,7 +69,11 @@ public sealed class GameStatusMonitorService : GameStatusMonitorServiceBase
         lock (ProcessCacheLock)
         {
             // 將重取資料這件事分散在不同tick，降低資源佔用
-            ProcessCache[key] = new CachedProcessInfo(path, null, Random.Shared.Next(1, ProcessCacheTtlTicks));
+            ProcessCache[key] = new CachedProcessInfo(
+                path,
+                null,
+                Random.Shared.Next(1, ProcessCacheTtlTicks)
+            );
         }
 
         return (path, null);

@@ -77,7 +77,7 @@ public sealed class ScanCommand
                     CoverImagePath = game.CoverImagePath,
                     SizeBytes = game.SizeBytes,
                     DiscoveredAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow,
                 };
 
                 var result = await repository.AddGameAsync(dbGame, ct);
@@ -93,12 +93,16 @@ public sealed class ScanCommand
                 }
             }
 
-            System.Console.WriteLine($"  Found {gamesFound} game(s), added {gamesAdded} new game(s)");
+            System.Console.WriteLine(
+                $"  Found {gamesFound} game(s), added {gamesAdded} new game(s)"
+            );
             System.Console.WriteLine();
         }
 
         System.Console.WriteLine("====================================");
-        System.Console.WriteLine($"Total: Found {totalGamesFound} game(s), added {totalGamesAdded} new game(s)");
+        System.Console.WriteLine(
+            $"Total: Found {totalGamesFound} game(s), added {totalGamesAdded} new game(s)"
+        );
 
         return 0;
     }

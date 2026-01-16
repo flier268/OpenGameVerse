@@ -13,20 +13,24 @@ public sealed class CategoryRepository : ICategoryRepository
 
     public CategoryRepository(string connectionString)
     {
-        _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+        _connectionString =
+            connectionString ?? throw new ArgumentNullException(nameof(connectionString));
     }
 
     /// <summary>
     /// Get all categories with game counts
     /// </summary>
-    public async IAsyncEnumerable<(string Name, int GameCount)> GetAllCategoriesAsync([EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<(string Name, int GameCount)> GetAllCategoriesAsync(
+        [EnumeratorCancellation] CancellationToken ct
+    )
     {
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(ct);
 
         // Get all categories from the categories table
         using var command = connection.CreateCommand();
-        command.CommandText = @"
+        command.CommandText =
+            @"
             SELECT c.name, COUNT(DISTINCT g.id) as game_count
             FROM categories c
             LEFT JOIN games g ON (g.custom_category = c.name OR (c.name = 'Uncategorized' AND g.custom_category IS NULL))
@@ -57,7 +61,8 @@ public sealed class CategoryRepository : ICategoryRepository
         await connection.OpenAsync(ct);
 
         using var command = connection.CreateCommand();
-        command.CommandText = @"
+        command.CommandText =
+            @"
             INSERT OR IGNORE INTO categories (name, created_at, updated_at)
             VALUES (@name, unixepoch(), unixepoch())
         ";

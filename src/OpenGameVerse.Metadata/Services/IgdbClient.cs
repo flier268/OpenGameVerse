@@ -30,14 +30,24 @@ public sealed class IgdbClient : IIgdbClient, IDisposable
         _clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
     }
 
-    public async Task<Result<IgdbGame[]>> SearchGamesAsync(string query, int limit = 10, CancellationToken ct = default)
+    public async Task<Result<IgdbGame[]>> SearchGamesAsync(
+        string query,
+        int limit = 10,
+        CancellationToken ct = default
+    )
     {
         try
         {
             await EnsureAuthenticatedAsync(ct);
 
-            var body = $"search \"{query}\"; fields name,summary,cover,first_release_date,rating,rating_count,genres,themes,platforms,url; limit {limit};";
-            var response = await PostAsync($"{BaseUrl}/games", body, IgdbJsonContext.Default.IgdbGameArray, ct);
+            var body =
+                $"search \"{query}\"; fields name,summary,cover,first_release_date,rating,rating_count,genres,themes,platforms,url; limit {limit};";
+            var response = await PostAsync(
+                $"{BaseUrl}/games",
+                body,
+                IgdbJsonContext.Default.IgdbGameArray,
+                ct
+            );
 
             return response.IsSuccess
                 ? response
@@ -49,18 +59,26 @@ public sealed class IgdbClient : IIgdbClient, IDisposable
         }
     }
 
-    public async Task<Result<IgdbGame?>> GetGameByIdAsync(long gameId, CancellationToken ct = default)
+    public async Task<Result<IgdbGame?>> GetGameByIdAsync(
+        long gameId,
+        CancellationToken ct = default
+    )
     {
         try
         {
             await EnsureAuthenticatedAsync(ct);
 
-            var body = $"fields name,summary,cover,first_release_date,rating,rating_count,genres,themes,platforms,url; where id = {gameId};";
-            var response = await PostAsync($"{BaseUrl}/games", body, IgdbJsonContext.Default.IgdbGameArray, ct);
+            var body =
+                $"fields name,summary,cover,first_release_date,rating,rating_count,genres,themes,platforms,url; where id = {gameId};";
+            var response = await PostAsync(
+                $"{BaseUrl}/games",
+                body,
+                IgdbJsonContext.Default.IgdbGameArray,
+                ct
+            );
 
-            var game = response.IsSuccess && response.Value is { Length: > 0 }
-                ? response.Value[0]
-                : null;
+            var game =
+                response.IsSuccess && response.Value is { Length: > 0 } ? response.Value[0] : null;
 
             return Result<IgdbGame?>.Success(game);
         }
@@ -70,18 +88,25 @@ public sealed class IgdbClient : IIgdbClient, IDisposable
         }
     }
 
-    public async Task<Result<IgdbCover?>> GetCoverAsync(long coverId, CancellationToken ct = default)
+    public async Task<Result<IgdbCover?>> GetCoverAsync(
+        long coverId,
+        CancellationToken ct = default
+    )
     {
         try
         {
             await EnsureAuthenticatedAsync(ct);
 
             var body = $"fields game,image_id,url,width,height; where id = {coverId};";
-            var response = await PostAsync($"{BaseUrl}/covers", body, IgdbJsonContext.Default.IgdbCoverArray, ct);
+            var response = await PostAsync(
+                $"{BaseUrl}/covers",
+                body,
+                IgdbJsonContext.Default.IgdbCoverArray,
+                ct
+            );
 
-            var cover = response.IsSuccess && response.Value is { Length: > 0 }
-                ? response.Value[0]
-                : null;
+            var cover =
+                response.IsSuccess && response.Value is { Length: > 0 } ? response.Value[0] : null;
 
             return Result<IgdbCover?>.Success(cover);
         }
@@ -91,7 +116,10 @@ public sealed class IgdbClient : IIgdbClient, IDisposable
         }
     }
 
-    public async Task<Result<byte[]>> DownloadImageAsync(string imageUrl, CancellationToken ct = default)
+    public async Task<Result<byte[]>> DownloadImageAsync(
+        string imageUrl,
+        CancellationToken ct = default
+    )
     {
         try
         {
@@ -116,12 +144,14 @@ public sealed class IgdbClient : IIgdbClient, IDisposable
         }
 
         // Request new token
-        var authRequest = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["client_id"] = _clientId,
-            ["client_secret"] = _clientSecret,
-            ["grant_type"] = "client_credentials"
-        });
+        var authRequest = new FormUrlEncodedContent(
+            new Dictionary<string, string>
+            {
+                ["client_id"] = _clientId,
+                ["client_secret"] = _clientSecret,
+                ["grant_type"] = "client_credentials",
+            }
+        );
 
         var response = await _httpClient.PostAsync(AuthUrl, authRequest, ct);
         response.EnsureSuccessStatusCode();
@@ -149,13 +179,18 @@ public sealed class IgdbClient : IIgdbClient, IDisposable
         }
     }
 
-    private async Task<Result<T>> PostAsync<T>(string url, string body, JsonTypeInfo<T> jsonTypeInfo, CancellationToken ct)
+    private async Task<Result<T>> PostAsync<T>(
+        string url,
+        string body,
+        JsonTypeInfo<T> jsonTypeInfo,
+        CancellationToken ct
+    )
     {
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Post, url)
             {
-                Content = new StringContent(body, Encoding.UTF8, "text/plain")
+                Content = new StringContent(body, Encoding.UTF8, "text/plain"),
             };
 
             request.Headers.Add("Client-ID", _clientId);

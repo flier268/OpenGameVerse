@@ -22,9 +22,11 @@ public static class SteamOSDetector
                 var content = File.ReadAllText("/etc/os-release");
 
                 // Check for SteamOS ID
-                if (content.Contains("ID=steamos", StringComparison.OrdinalIgnoreCase) ||
-                    content.Contains("ID_LIKE=steamos", StringComparison.OrdinalIgnoreCase) ||
-                    content.Contains("NAME=\"SteamOS\"", StringComparison.OrdinalIgnoreCase))
+                if (
+                    content.Contains("ID=steamos", StringComparison.OrdinalIgnoreCase)
+                    || content.Contains("ID_LIKE=steamos", StringComparison.OrdinalIgnoreCase)
+                    || content.Contains("NAME=\"SteamOS\"", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     return true;
                 }
@@ -51,10 +53,13 @@ public static class SteamOSDetector
             // Galileo = Steam Deck OLED
             if (File.Exists("/sys/devices/virtual/dmi/id/product_name"))
             {
-                var productName = File.ReadAllText("/sys/devices/virtual/dmi/id/product_name").Trim();
+                var productName = File.ReadAllText("/sys/devices/virtual/dmi/id/product_name")
+                    .Trim();
 
-                if (productName.Contains("Jupiter", StringComparison.OrdinalIgnoreCase) ||
-                    productName.Contains("Galileo", StringComparison.OrdinalIgnoreCase))
+                if (
+                    productName.Contains("Jupiter", StringComparison.OrdinalIgnoreCase)
+                    || productName.Contains("Galileo", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     return true;
                 }
@@ -65,8 +70,10 @@ public static class SteamOSDetector
             {
                 var boardName = File.ReadAllText("/sys/devices/virtual/dmi/id/board_name").Trim();
 
-                if (boardName.Contains("Jupiter", StringComparison.OrdinalIgnoreCase) ||
-                    boardName.Contains("Galileo", StringComparison.OrdinalIgnoreCase))
+                if (
+                    boardName.Contains("Jupiter", StringComparison.OrdinalIgnoreCase)
+                    || boardName.Contains("Galileo", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     return true;
                 }
@@ -95,7 +102,8 @@ public static class SteamOSDetector
         {
             if (File.Exists("/sys/devices/virtual/dmi/id/product_name"))
             {
-                var productName = File.ReadAllText("/sys/devices/virtual/dmi/id/product_name").Trim();
+                var productName = File.ReadAllText("/sys/devices/virtual/dmi/id/product_name")
+                    .Trim();
 
                 if (productName.Contains("Galileo", StringComparison.OrdinalIgnoreCase))
                 {
@@ -154,12 +162,19 @@ public static class SteamOSDetector
         return new[]
         {
             // Flatpak Steam (default on Steam Deck)
-            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+            Path.Combine(
+                home,
+                ".var",
+                "app",
+                "com.valvesoftware.Steam",
+                ".local",
+                "share",
+                "Steam"
+            ),
             Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".steam", "steam"),
-
             // Standard Steam installations (fallback)
             Path.Combine(home, ".local", "share", "Steam"),
-            Path.Combine(home, ".steam", "steam")
+            Path.Combine(home, ".steam", "steam"),
         };
     }
 }

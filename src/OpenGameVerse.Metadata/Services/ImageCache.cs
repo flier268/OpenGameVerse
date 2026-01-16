@@ -11,7 +11,7 @@ namespace OpenGameVerse.Metadata.Services;
 public sealed class ImageCache
 {
     private readonly string _cacheDirectory;
-    private const int CoverWidth = 264;  // Standard cover size
+    private const int CoverWidth = 264; // Standard cover size
     private const int CoverHeight = 352;
 
     public ImageCache(string cacheDirectory)
@@ -27,7 +27,11 @@ public sealed class ImageCache
     /// <param name="fileName">File name (without extension)</param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>Path to cached image</returns>
-    public async Task<Result<string>> CacheImageAsync(byte[] imageData, string fileName, CancellationToken ct = default)
+    public async Task<Result<string>> CacheImageAsync(
+        byte[] imageData,
+        string fileName,
+        CancellationToken ct = default
+    )
     {
         try
         {
@@ -42,17 +46,17 @@ public sealed class ImageCache
             // Load, resize, and save as WebP
             using var image = Image.Load(imageData);
 
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(CoverWidth, CoverHeight),
-                Mode = ResizeMode.Max
-            }));
+            image.Mutate(x =>
+                x.Resize(
+                    new ResizeOptions
+                    {
+                        Size = new Size(CoverWidth, CoverHeight),
+                        Mode = ResizeMode.Max,
+                    }
+                )
+            );
 
-            var encoder = new WebpEncoder
-            {
-                Quality = 85,
-                Method = WebpEncodingMethod.BestQuality
-            };
+            var encoder = new WebpEncoder { Quality = 85, Method = WebpEncodingMethod.BestQuality };
 
             await image.SaveAsync(cachedPath, encoder, ct);
 

@@ -15,22 +15,23 @@ public sealed class LinuxPlatformHost : IPlatformHost
     public PlatformType Platform => PlatformType.Linux;
 
     private readonly LinuxProcessLauncher _processLauncher = new();
-    private readonly List<IGameScanner> _scanners =
-    [
-        new SteamScanner(),
-        new DesktopFileScanner()
-    ];
+    private readonly List<IGameScanner> _scanners = [new SteamScanner(), new DesktopFileScanner()];
 
     public IEnumerable<IGameScanner> GetScanners()
     {
         return _scanners;
     }
 
-    public async Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(GameInstallation installation, CancellationToken ct)
+    public async Task<Result<System.Diagnostics.Process?>> LaunchGameAsync(
+        GameInstallation installation,
+        CancellationToken ct
+    )
     {
         if (string.IsNullOrWhiteSpace(installation.ExecutablePath))
         {
-            return Result<System.Diagnostics.Process?>.Failure("No executable path configured for this game");
+            return Result<System.Diagnostics.Process?>.Failure(
+                "No executable path configured for this game"
+            );
         }
 
         // Prepare environment variables for Wine/Proton if needed
@@ -40,19 +41,26 @@ public sealed class LinuxPlatformHost : IPlatformHost
         return await _processLauncher.LaunchAsync(
             installation.ExecutablePath,
             environmentVariables: environmentVariables,
-            ct: ct);
+            ct: ct
+        );
     }
 
     private Dictionary<string, string>? PrepareEnvironmentVariables(GameInstallation installation)
     {
         // Steam games with steam:// protocol don't need environment variables
-        if (installation.ExecutablePath?.StartsWith("steam://", StringComparison.OrdinalIgnoreCase) == true)
+        if (
+            installation.ExecutablePath?.StartsWith("steam://", StringComparison.OrdinalIgnoreCase)
+            == true
+        )
         {
             return null;
         }
 
         // Check if this is a Windows executable (.exe)
-        if (installation.ExecutablePath?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) == true)
+        if (
+            installation.ExecutablePath?.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            == true
+        )
         {
             // Try to detect Wine prefix
             var winePrefix = DetectWinePrefix(installation.InstallPath);
@@ -61,7 +69,7 @@ public sealed class LinuxPlatformHost : IPlatformHost
                 return new Dictionary<string, string>
                 {
                     ["WINEPREFIX"] = winePrefix,
-                    ["WINEDEBUG"] = "-all"  // Suppress Wine debug output
+                    ["WINEDEBUG"] = "-all", // Suppress Wine debug output
                 };
             }
         }

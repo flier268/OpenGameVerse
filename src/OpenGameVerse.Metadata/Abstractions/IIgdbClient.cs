@@ -15,7 +15,11 @@ public interface IIgdbClient
     /// <param name="limit">Maximum number of results</param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>List of matching games</returns>
-    Task<Result<IgdbGame[]>> SearchGamesAsync(string query, int limit = 10, CancellationToken ct = default);
+    Task<Result<IgdbGame[]>> SearchGamesAsync(
+        string query,
+        int limit = 10,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Gets detailed information about a game by ID.

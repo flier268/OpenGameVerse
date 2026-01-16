@@ -1,7 +1,7 @@
-using OpenGameVerse.Core.Abstractions;
-using OpenGameVerse.Core.Models;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using OpenGameVerse.Core.Abstractions;
+using OpenGameVerse.Core.Models;
 
 namespace OpenGameVerse.Platform.Windows.Scanners;
 
@@ -20,7 +20,9 @@ public sealed class EpicGamesScanner : IGameScanner
         return Task.FromResult(false);
     }
 
-    public async IAsyncEnumerable<GameInstallation> ScanAsync([EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<GameInstallation> ScanAsync(
+        [EnumeratorCancellation] CancellationToken ct
+    )
     {
         // TODO: Implement Epic Games scanning
         await Task.CompletedTask;

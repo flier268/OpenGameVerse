@@ -42,7 +42,8 @@ public sealed class AppSettingsService : IAppSettingsService
             var json = File.ReadAllText(_settingsPath);
             var settings = JsonSerializer.Deserialize(
                 json,
-                OpenGameVerseJsonContext.Default.AppSettings);
+                OpenGameVerseJsonContext.Default.AppSettings
+            );
 
             if (settings != null)
             {
@@ -88,7 +89,8 @@ public sealed class AppSettingsService : IAppSettingsService
 
         var json = JsonSerializer.Serialize(
             CurrentSettings,
-            OpenGameVerseJsonContext.Default.AppSettings);
+            OpenGameVerseJsonContext.Default.AppSettings
+        );
 
         await File.WriteAllTextAsync(_settingsPath, json);
     }
@@ -120,7 +122,7 @@ public sealed class AppSettingsService : IAppSettingsService
                 {
                     "English (en_US)" => Language.English,
                     "日本語 (ja_JP)" => Language.Japanese,
-                    _ => Language.TraditionalChinese
+                    _ => Language.TraditionalChinese,
                 };
             }
 
@@ -130,7 +132,7 @@ public sealed class AppSettingsService : IAppSettingsService
                 {
                     "隱藏" => GameLaunchAction.Hide,
                     "不變更" => GameLaunchAction.NoChange,
-                    _ => GameLaunchAction.Minimize
+                    _ => GameLaunchAction.Minimize,
                 };
             }
 
@@ -140,7 +142,7 @@ public sealed class AppSettingsService : IAppSettingsService
                 {
                     "永遠還原視窗" => GameCloseAction.AlwaysRestore,
                     "維持最小化" => GameCloseAction.KeepMinimized,
-                    _ => GameCloseAction.RestoreWhenLaunchedFromUi
+                    _ => GameCloseAction.RestoreWhenLaunchedFromUi,
                 };
             }
 
@@ -155,7 +157,7 @@ public sealed class AppSettingsService : IAppSettingsService
                 {
                     "預設" => TrayIconStyle.Default,
                     "簡約" => TrayIconStyle.Minimal,
-                    _ => TrayIconStyle.Gamepad
+                    _ => TrayIconStyle.Gamepad,
                 };
             }
 
@@ -210,7 +212,7 @@ public sealed class AppSettingsService : IAppSettingsService
                 {
                     "所有遊戲" => PlaytimeImportMode.AllGames,
                     "不匯入" => PlaytimeImportMode.Disabled,
-                    _ => PlaytimeImportMode.NewOnly
+                    _ => PlaytimeImportMode.NewOnly,
                 };
             }
 

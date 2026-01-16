@@ -1,10 +1,10 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using Gameloop.Vdf;
 using Gameloop.Vdf.Linq;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Platform.Linux.SteamOS;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace OpenGameVerse.Platform.Linux.Scanners;
 
@@ -23,13 +23,17 @@ public sealed class SteamScanner : IGameScanner
         return Task.FromResult(steamPath != null && Directory.Exists(steamPath));
     }
 
-    public async IAsyncEnumerable<GameInstallation> ScanAsync([EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<GameInstallation> ScanAsync(
+        [EnumeratorCancellation] CancellationToken ct
+    )
     {
         var steamPath = GetSteamPath();
-        if (steamPath == null) yield break;
+        if (steamPath == null)
+            yield break;
 
         var libraryFoldersPath = Path.Combine(steamPath, "steamapps", "libraryfolders.vdf");
-        if (!File.Exists(libraryFoldersPath)) yield break;
+        if (!File.Exists(libraryFoldersPath))
+            yield break;
 
         // Parse VDF file
         VProperty? vdfData = null;
@@ -43,19 +47,23 @@ public sealed class SteamScanner : IGameScanner
             yield break;
         }
 
-        if (vdfData == null) yield break;
+        if (vdfData == null)
+            yield break;
 
         // Iterate through library folders
         foreach (var child in vdfData.Value.Children())
         {
-            if (child is not VProperty property) continue;
+            if (child is not VProperty property)
+                continue;
 
             var pathToken = property.Value["path"];
-            if (pathToken?.ToString() is not string libraryPath) continue;
+            if (pathToken?.ToString() is not string libraryPath)
+                continue;
 
             // Scan this library's steamapps directory
             var steamAppsPath = Path.Combine(libraryPath, "steamapps");
-            if (!Directory.Exists(steamAppsPath)) continue;
+            if (!Directory.Exists(steamAppsPath))
+                continue;
 
             // Find .acf manifest files
             var acfFiles = Directory.GetFiles(steamAppsPath, "appmanifest_*.acf");
@@ -92,16 +100,22 @@ public sealed class SteamScanner : IGameScanner
         var paths = new[]
         {
             // Flatpak Steam (common on modern distros)
-            Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+            Path.Combine(
+                home,
+                ".var",
+                "app",
+                "com.valvesoftware.Steam",
+                ".local",
+                "share",
+                "Steam"
+            ),
             Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".steam", "steam"),
-
             // Standard Steam installations
             Path.Combine(home, ".local", "share", "Steam"),
             Path.Combine(home, ".steam", "steam"),
-
             // Snap Steam
             Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam"),
-            Path.Combine(home, "snap", "steam", "common", ".steam", "steam")
+            Path.Combine(home, "snap", "steam", "common", ".steam", "steam"),
         };
 
         return paths.FirstOrDefault(Directory.Exists);
@@ -111,7 +125,8 @@ public sealed class SteamScanner : IGameScanner
         string acfPath,
         string libraryPath,
         string steamPath,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         try
         {
@@ -140,7 +155,9 @@ public sealed class SteamScanner : IGameScanner
             try
             {
                 var dirInfo = new DirectoryInfo(installPath);
-                sizeBytes = dirInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+                sizeBytes = dirInfo
+                    .EnumerateFiles("*", SearchOption.AllDirectories)
+                    .Sum(f => f.Length);
             }
             catch
             {
@@ -150,9 +167,7 @@ public sealed class SteamScanner : IGameScanner
             var coverImagePath = !string.IsNullOrWhiteSpace(appId)
                 ? GetSteamCoverPath(steamPath, libraryPath, appId)
                 : null;
-            var executablePath = !string.IsNullOrWhiteSpace(appId)
-                ? $"steam://run/{appId}"
-                : null;
+            var executablePath = !string.IsNullOrWhiteSpace(appId) ? $"steam://run/{appId}" : null;
 
             return new GameInstallation
             {
@@ -162,7 +177,7 @@ public sealed class SteamScanner : IGameScanner
                 PlatformId = appId,
                 ExecutablePath = executablePath,
                 CoverImagePath = coverImagePath,
-                SizeBytes = sizeBytes
+                SizeBytes = sizeBytes,
             };
         }
         catch
@@ -177,7 +192,7 @@ public sealed class SteamScanner : IGameScanner
         {
             Path.Combine(steamPath, "appcache", "librarycache"),
             Path.Combine(steamPath, "steamapps", "librarycache"),
-            Path.Combine(libraryPath, "steamapps", "librarycache")
+            Path.Combine(libraryPath, "steamapps", "librarycache"),
         };
 
         string[] candidates =
@@ -187,7 +202,7 @@ public sealed class SteamScanner : IGameScanner
             $"{appId}_library_600x900.webp",
             $"{appId}_library_capsule.jpg",
             $"{appId}_library_capsule.png",
-            $"{appId}_library_capsule.webp"
+            $"{appId}_library_capsule.webp",
         };
 
         foreach (var cacheDir in cacheDirs)
@@ -224,33 +239,24 @@ public sealed class SteamScanner : IGameScanner
             return null;
         }
 
-        string[] preferredTokens =
-        {
-            "library_600x900",
-            "library_capsule",
-            "capsule",
-            "library"
-        };
+        string[] preferredTokens = { "library_600x900", "library_capsule", "capsule", "library" };
 
         try
         {
-            var imageFiles = Directory.EnumerateFiles(directory)
-                .Where(IsImageFile)
-                .ToList();
+            var imageFiles = Directory.EnumerateFiles(directory).Where(IsImageFile).ToList();
 
             foreach (var token in preferredTokens)
             {
                 var match = imageFiles.FirstOrDefault(file =>
-                    Path.GetFileName(file).Contains(token, StringComparison.OrdinalIgnoreCase));
+                    Path.GetFileName(file).Contains(token, StringComparison.OrdinalIgnoreCase)
+                );
                 if (!string.IsNullOrEmpty(match))
                 {
                     return match;
                 }
             }
 
-            return imageFiles
-                .OrderByDescending(file => new FileInfo(file).Length)
-                .FirstOrDefault();
+            return imageFiles.OrderByDescending(file => new FileInfo(file).Length).FirstOrDefault();
         }
         catch
         {

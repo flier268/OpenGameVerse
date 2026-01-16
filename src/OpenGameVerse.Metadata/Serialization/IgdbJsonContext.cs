@@ -20,6 +20,4 @@ namespace OpenGameVerse.Metadata.Serialization;
 [JsonSerializable(typeof(IgdbCover[]))]
 [JsonSerializable(typeof(GameMetadata))]
 [JsonSerializable(typeof(List<GameMetadata>))]
-public partial class IgdbJsonContext : JsonSerializerContext
-{
-}
+public partial class IgdbJsonContext : JsonSerializerContext { }

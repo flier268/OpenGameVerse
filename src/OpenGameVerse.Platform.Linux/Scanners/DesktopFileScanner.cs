@@ -1,9 +1,9 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using OpenGameVerse.Core.Abstractions;
 using OpenGameVerse.Core.Models;
 using OpenGameVerse.Platform.Linux.Models;
 using OpenGameVerse.Platform.Linux.Parsers;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace OpenGameVerse.Platform.Linux.Scanners;
 
@@ -22,7 +22,9 @@ public sealed class DesktopFileScanner : IGameScanner
         return Task.FromResult(true);
     }
 
-    public async IAsyncEnumerable<GameInstallation> ScanAsync([EnumeratorCancellation] CancellationToken ct)
+    public async IAsyncEnumerable<GameInstallation> ScanAsync(
+        [EnumeratorCancellation] CancellationToken ct
+    )
     {
         var desktopDirs = GetDesktopFilePaths();
 
@@ -72,16 +74,13 @@ public sealed class DesktopFileScanner : IGameScanner
             // System-wide applications
             "/usr/share/applications",
             "/usr/local/share/applications",
-
             // User-specific applications
             Path.Combine(home, ".local", "share", "applications"),
-
             // Flatpak applications
             Path.Combine(home, ".local", "share", "flatpak", "exports", "share", "applications"),
             "/var/lib/flatpak/exports/share/applications",
-
             // Snap applications
-            "/var/lib/snapd/desktop/applications"
+            "/var/lib/snapd/desktop/applications",
         };
     }
 
@@ -99,11 +98,12 @@ public sealed class DesktopFileScanner : IGameScanner
             "gog galaxy",
             "bottles",
             "gamehub",
-            "itch"
+            "itch",
         };
 
         return launcherNames.Any(launcher =>
-            name.Contains(launcher, StringComparison.OrdinalIgnoreCase));
+            name.Contains(launcher, StringComparison.OrdinalIgnoreCase)
+        );
     }
 
     private static GameInstallation? ConvertToGameInstallation(DesktopEntry entry)
@@ -131,9 +131,11 @@ public sealed class DesktopFileScanner : IGameScanner
         else if (File.Exists(entry.Exec))
         {
             var execDir = Path.GetDirectoryName(entry.Exec);
-            if (!string.IsNullOrWhiteSpace(execDir)
+            if (
+                !string.IsNullOrWhiteSpace(execDir)
                 && Directory.Exists(execDir)
-                && !IsSystemBinDirectory(execDir))
+                && !IsSystemBinDirectory(execDir)
+            )
             {
                 installPath = execDir;
             }
@@ -152,7 +154,9 @@ public sealed class DesktopFileScanner : IGameScanner
             try
             {
                 var dirInfo = new DirectoryInfo(installPath);
-                sizeBytes = dirInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(f => f.Length);
+                sizeBytes = dirInfo
+                    .EnumerateFiles("*", SearchOption.AllDirectories)
+                    .Sum(f => f.Length);
             }
             catch
             {
@@ -175,7 +179,7 @@ public sealed class DesktopFileScanner : IGameScanner
             Platform = "Linux",
             ExecutablePath = entry.Exec,
             IconPath = iconPath,
-            SizeBytes = sizeBytes
+            SizeBytes = sizeBytes,
         };
     }
 
@@ -207,9 +211,9 @@ public sealed class DesktopFileScanner : IGameScanner
     {
         var normalized = path.TrimEnd(Path.DirectorySeparatorChar);
         return string.Equals(normalized, "/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
-               || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal);
+            || string.Equals(normalized, "/usr/bin", StringComparison.Ordinal)
+            || string.Equals(normalized, "/usr/local/bin", StringComparison.Ordinal)
+            || string.Equals(normalized, "/snap/bin", StringComparison.Ordinal);
     }
 
     private static string? FindIconPath(string iconName)
@@ -219,8 +223,13 @@ public sealed class DesktopFileScanner : IGameScanner
         {
             "/usr/share/icons/hicolor",
             "/usr/share/pixmaps",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".local", "share", "icons", "hicolor")
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                ".local",
+                "share",
+                "icons",
+                "hicolor"
+            ),
         };
 
         var extensions = new[] { ".png", ".svg", ".xpm", ".jpg" };
@@ -238,7 +247,11 @@ public sealed class DesktopFileScanner : IGameScanner
                 foreach (var ext in extensions)
                 {
                     var iconFile = iconName + ext;
-                    var matches = Directory.GetFiles(baseDir, iconFile, SearchOption.AllDirectories);
+                    var matches = Directory.GetFiles(
+                        baseDir,
+                        iconFile,
+                        SearchOption.AllDirectories
+                    );
                     if (matches.Length > 0)
                     {
                         return matches[0];

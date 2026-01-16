@@ -23,7 +23,7 @@ try
         "list" => await new ListCommand(services).ExecuteAsync(cts.Token),
         "help" or "--help" or "-h" => ShowHelp(),
         "version" or "--version" or "-v" => ShowVersion(),
-        _ => ShowHelp()
+        _ => ShowHelp(),
     };
 }
 catch (OperationCanceledException)
