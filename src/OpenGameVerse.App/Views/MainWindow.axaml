@@ -7,9 +7,11 @@
                  xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
                  mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
                  x:Class="OpenGameVerse.App.Views.MainWindow"
+                 x:Name="MainWindowRoot"
                  x:DataType="vm:MainWindowViewModel"
                  Icon="/Assets/opengameverse-icon.png"
                  Title="{Binding Title}"
+                 IsMenuVisible="True"
                  Width="1200"
                  Height="800">
     <Design.DataContext>
@@ -20,37 +22,74 @@
                Width="22"
                Height="22" />
     </suki:SukiWindow.LogoContent>
+    <suki:SukiWindow.Styles>
+        <Style Selector="TextBlock.Icon">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+    </suki:SukiWindow.Styles>
+    <suki:SukiWindow.MenuItems>
+        <MenuItem Header="Library">
+            <MenuItem.Icon>
+                <TextBlock Text="🎮" Classes="Icon" />
+            </MenuItem.Icon>
+            <MenuItem Header="Scan for games"
+                      Command="{Binding ScanGamesCommand}"
+                      IsEnabled="{Binding !IsScanning}">
+                <MenuItem.Icon>
+                    <TextBlock Text="↻" Classes="Icon" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Manage Categories"
+                      Command="{Binding ManageCategoriesCommand}">
+                <MenuItem.Icon>
+                    <TextBlock Text="📁" Classes="Icon" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="Clear Filters"
+                      Command="{Binding ClearFiltersCommand}">
+                <MenuItem.Icon>
+                    <TextBlock Text="✕" Classes="Icon" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </MenuItem>
+        <MenuItem Header="View">
+            <MenuItem.Icon>
+                <TextBlock Text="▦" Classes="Icon" />
+            </MenuItem.Icon>
+            <MenuItem Header="Toggle Grid/List"
+                      Command="{Binding ToggleViewCommand}">
+                <MenuItem.Icon>
+                    <TextBlock Text="▦" Classes="Icon" />
+                </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="Fullscreen mode"
+                      Command="{Binding EnterFullscreenCommand}"
+                      CommandParameter="{Binding ElementName=MainWindowRoot}">
+                <MenuItem.Icon>
+                    <TextBlock Text="⛶" Classes="Icon" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </MenuItem>
+        <MenuItem Header="Tools">
+            <MenuItem.Icon>
+                <TextBlock Text="⚙" Classes="Icon" />
+            </MenuItem.Icon>
+            <MenuItem Header="Settings"
+                      Command="{Binding OpenSettingsCommand}">
+                <MenuItem.Icon>
+                    <TextBlock Text="⚙" Classes="Icon" />
+                </MenuItem.Icon>
+            </MenuItem>
+        </MenuItem>
+    </suki:SukiWindow.MenuItems>
     <suki:SukiMainHost>
         <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="16">
-            <Border Grid.Row="0"
-                    CornerRadius="16"
-                    Padding="16">
-                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="6">
-                    <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Text="OpenGameVerse"
-                                   FontSize="22"
-                                   FontWeight="Bold" />
-                        <TextBlock Text="{Binding FilteredGames.Count, StringFormat='({0} games)'}" />
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Content="Manage Categories"
-                                Command="{Binding ManageCategoriesCommand}" />
-                        <Button Content="↻"
-                                ToolTip.Tip="Scan for games"
-                                Command="{Binding ScanGamesCommand}"
-                                IsEnabled="{Binding !IsScanning}" />
-                        <Button Content="⚙"
-                                ToolTip.Tip="Settings"
-                                Command="{Binding OpenSettingsCommand}" />
-                        <Button Content="⛶"
-                                ToolTip.Tip="Fullscreen mode"
-                                Command="{Binding EnterFullscreenCommand}"
-                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding FilteredGames.Count, StringFormat='({0} games)'}" />
+            </StackPanel>
             <Border Grid.Row="1"
                     CornerRadius="16"
                     Padding="16">
