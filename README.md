@@ -1,6 +1,7 @@
 # OpenGameVerse
 
 High-performance, cross-platform game library management platform built with .NET 10 Native AOT compilation.
+<img width="1201" height="802" alt="圖片" src="https://github.com/user-attachments/assets/078e9382-2735-4304-927e-cd166d1c9340" />
 
 ## Status
 
