@@ -1,32 +1,32 @@
 # OpenGameVerse
 
+[![Build and Test](https://github.com/flier268/OpenGameVerse/actions/workflows/ci.yml/badge.svg)](https://github.com/flier268/OpenGameVerse/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/flier268/OpenGameVerse)](https://github.com/flier268/OpenGameVerse/releases)
+[![Pre-release](https://img.shields.io/github/v/release/flier268/OpenGameVerse?include_prereleases)](https://github.com/flier268/OpenGameVerse/releases)
+
 High-performance, cross-platform game library management platform built with .NET 10 Native AOT compilation.
 <img width="1201" height="802" alt="圖片" src="https://github.com/user-attachments/assets/078e9382-2735-4304-927e-cd166d1c9340" />
 
-## Status
-
-### Phase 1: ✅ COMPLETE (Console Core)
-**Target**: Sub-500ms cold start, <100MB memory footprint
-**Achieved**: **16ms cold start**, **3.4MB binary** 🎉
-
-### Phase 2: ✅ COMPLETE (Avalonia Desktop UI)
-**Target**: Modern UI, <100MB binary
-**Achieved**: **19MB binary**, **Zero warnings** 🎉
-
-## Project Overview
+## Overview
 
 OpenGameVerse is a cross-platform game library manager that automatically detects and catalogs installed games from various platforms (Steam, Epic Games, GOG, etc.). Built with .NET 10 Native AOT for maximum performance and minimal resource usage.
 
+### Highlights
+
+- **16ms cold start** with a **3.5MB** Native AOT console binary
+- **30MB** Native AOT desktop application with Avalonia UI
+- Cross-platform scanning foundation with SQLite storage and AOT-safe DI
+
 ### Key Features
 
-**Phase 1 (Console)**:
+**Console**:
 - ✅ Cross-platform CLI (Windows & Linux)
 - ✅ Steam game detection and cataloging
 - ✅ SQLite database with Dapper.AOT
 - ✅ Native AOT compilation (no .NET runtime)
-- ✅ Sub-20ms cold start, 3.4MB binary
+- ✅ Sub-20ms cold start, 3.5MB binary
 
-**Phase 2 (Desktop UI)**:
+**Desktop UI**:
 - ✅ Avalonia desktop application
 - ✅ Modern Fluent Design interface
 - ✅ MVVM with CommunityToolkit.Mvvm
@@ -107,7 +107,7 @@ OpenGameVerse/
 │   ├── OpenGameVerse.Platform.Linux/    # Linux scanners
 │   ├── OpenGameVerse.Console/       # CLI entry point
 │   └── OpenGameVerse.App/           # Avalonia desktop application
-└── tests/                           # Unit tests (future)
+└── tests/                           # Unit tests
 ```
 
 ## Architecture
@@ -122,20 +122,20 @@ OpenGameVerse/
 
 **Windows**:
 - Steam scanner (Registry + VDF parsing)
-- Epic Games scanner (stub)
-- GOG Galaxy scanner (stub)
+- Epic Games scanner (scaffolded)
+- GOG Galaxy scanner (scaffolded)
 
 **Linux**:
 - Steam scanner (XDG paths + VDF parsing)
-- Desktop file scanner (planned)
-- Flatpak/Snap support (planned)
+- Desktop file scanner (scaffolded)
+- Flatpak/Snap support (scaffolded)
 
 ## Performance Metrics
 
 | Metric | Target | Achieved |
 |--------|--------|----------|
 | Cold Start | < 500ms | **16ms** ✅ |
-| Binary Size | < 100MB | **3.4MB** ✅ |
+| Binary Size | < 100MB | **3.5MB** ✅ |
 | Memory Usage | < 100MB | TBD |
 | Build Warnings | 0 | **0** ✅ |
 | Build Errors | 0 | **0** ✅ |
@@ -186,14 +186,6 @@ dotnet publish -c Release /p:PublishAot=true
 ```
 
 Check for IL2026, IL2087, IL3050 warnings.
-
-## Roadmap
-
-- [x] **Phase 1**: Core Kernel (SQLite, game scanning, AOT foundation) ✅
-- [x] **Phase 2**: Avalonia UI with responsive game grid ✅
-- [ ] **Phase 3**: IGDB metadata integration, cover art caching
-- [x] **Phase 4**: Fullscreen mode with controller support
-- [ ] **Phase 5**: Linux optimization (SteamOS, binary size reduction)
 
 ## Contributing
 
