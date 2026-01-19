@@ -15,7 +15,11 @@
     <Design.DataContext>
         <vm:MainWindowViewModel />
     </Design.DataContext>
-
+    <suki:SukiWindow.LogoContent>
+        <Image Source="/Assets/opengameverse-icon.png"
+               Width="22"
+               Height="22" />
+    </suki:SukiWindow.LogoContent>
     <suki:SukiMainHost>
         <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="24" RowSpacing="16">
             <Border Grid.Row="0"
@@ -32,14 +36,15 @@
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <Button Content="Manage Categories"
                                 Command="{Binding ManageCategoriesCommand}" />
-                        <Button Content="Scan for Games"
+                        <Button Content="↻"
+                                ToolTip.Tip="Scan for games"
                                 Command="{Binding ScanGamesCommand}"
                                 IsEnabled="{Binding !IsScanning}" />
-                        <Button Content="Refresh"
-                                Command="{Binding RefreshCommand}" />
-                        <Button Content="設定"
+                        <Button Content="⚙"
+                                ToolTip.Tip="Settings"
                                 Command="{Binding OpenSettingsCommand}" />
-                        <Button Content="Fullscreen Mode"
+                        <Button Content="⛶"
+                                ToolTip.Tip="Fullscreen mode"
                                 Command="{Binding EnterFullscreenCommand}"
                                 CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
                     </StackPanel>
@@ -57,7 +62,8 @@
                                  VerticalAlignment="Center" />
 
                         <ToggleButton IsChecked="{Binding ShowFavoritesOnly}"
-                                      Content="Favorites"
+                                      Content="★"
+                                      ToolTip.Tip="Favorites"
                                       VerticalAlignment="Center" />
 
                         <ComboBox ItemsSource="{Binding AvailablePlatforms}"
@@ -317,8 +323,10 @@
                         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                             <Button Content="Clear Filters"
                                     Command="{Binding ClearFiltersCommand}" />
-                            <Button Content="Scan for Games"
-                                    Command="{Binding ScanGamesCommand}" />
+                            <Button Content="↻"
+                                    ToolTip.Tip="Scan for games"
+                                    Command="{Binding ScanGamesCommand}"
+                                    IsEnabled="{Binding !IsScanning}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

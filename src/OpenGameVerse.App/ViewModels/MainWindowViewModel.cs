@@ -314,12 +314,6 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task RefreshAsync()
-    {
-        await LoadGamesAsync();
-    }
-
-    [RelayCommand]
     private async Task EnterFullscreenAsync(Window? parentWindow)
     {
         if (parentWindow == null || !parentWindow.IsVisible)

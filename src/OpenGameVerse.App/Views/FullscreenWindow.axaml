@@ -69,7 +69,10 @@
 
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,30">
                     <StackPanel Orientation="Horizontal" Spacing="20">
-                        <TextBlock Text="🎮 OpenGameVerse"
+                        <Image Source="/Assets/opengameverse-icon.png"
+                               Width="48"
+                               Height="48" />
+                        <TextBlock Text="OpenGameVerse"
                                    FontSize="48"
                                    FontWeight="Bold"
                                    VerticalAlignment="Center" />
@@ -80,12 +83,10 @@
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="15">
                         <Button Classes="nav-button"
-                                Content="Scan Games"
+                                Content="↻"
+                                ToolTip.Tip="Scan for games"
                                 Command="{Binding ScanGamesCommand}"
                                 IsEnabled="{Binding !IsScanning}" />
-                        <Button Classes="nav-button"
-                                Content="Refresh"
-                                Command="{Binding RefreshCommand}" />
                         <Button Classes="nav-button"
                                 Content="Exit Fullscreen"
                                 Command="{Binding ExitFullscreenCommand}" />
